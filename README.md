@@ -1,4 +1,4 @@
-# AI-Powered Code Review Tool 🤖🔍
+# Cognito
 This project aims to enhance code quality and developer productivity by automating code review tasks using advanced AI technologies. The tool leverages machine learning and natural language processing to perform comprehensive static code analysis, provide intelligent suggestions, and detect performance bottlenecks.
 ## Key Features
 * Automated Static Analysis: Identifies common errors, potential bugs, and style issues across various programming languages.
