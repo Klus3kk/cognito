@@ -1,10 +1,14 @@
+"""
+Enhanced main module for Cognito with code correction functionality.
+
+This is an improved version of the main.py that adds code correction features.
+"""
+
 import os
 import sys
 import logging
 from colorama import init, Fore, Style
-from analyzers.readability_analyzer import analyze_readability
-from analyzers.performance_analyzer import analyze_complexity, analyze_memory_usage
-from analyzers.security_analyzer import analyze_security, generate_security_suggestion
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -12,6 +16,26 @@ logger = logging.getLogger(__name__)
 
 # Initialize colorama for cross-platform colored terminal output
 init()
+
+# Add the current directory to path to ensure imports work
+current_dir = Path(__file__).resolve().parent
+if str(current_dir) not in sys.path:
+    sys.path.insert(0, str(current_dir))
+
+# Import analyzers
+try:
+    from analyzers.readability_analyzer import analyze_readability
+    from analyzers.performance_analyzer import analyze_complexity, analyze_memory_usage
+    from analyzers.security_analyzer import analyze_security, generate_security_suggestion
+    from language_detector import detect_code_language
+    
+    # Import the new code corrector
+    from code_correction import CodeCorrector
+except ImportError as e:
+    logger.error(f"Error importing modules: {e}")
+    print(f"{Fore.RED}Error: Could not import required modules. Make sure you're running from the project root.{Style.RESET_ALL}")
+    print(f"{Fore.RED}Missing: {e}{Style.RESET_ALL}")
+    sys.exit(1)
 
 def clear_screen():
     """Clear the terminal screen."""
@@ -28,7 +52,7 @@ def print_logo():
     ╚██████╗╚██████╔╝╚██████╔╝██║ ╚████║██║   ██║   ╚██████╔╝
      ╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝   ╚═╝    ╚═════╝ 
     {Style.RESET_ALL}
-    {Fore.GREEN}AI-Powered Code Review Assistant {Style.RESET_ALL}v0.1.0
+    {Fore.GREEN}AI-Powered Code Review Assistant {Style.RESET_ALL}v0.2.0
     """
     print(logo)
 
@@ -60,11 +84,9 @@ def format_suggestion(suggestion, category):
 def detect_language(code):
     """Attempt to detect the programming language of the code."""
     try:
-        # Import the language detector here to avoid circular imports
-        from language_detector import detect_code_language
         return detect_code_language(code)
-    except ImportError:
-        logger.warning("Language detector not available, using simple detection")
+    except Exception as e:
+        logger.warning(f"Language detector error: {e}")
         # Fallback to simple detection
         if '#include' in code and ('{' in code and '}' in code and ';' in code):
             return 'C'
@@ -83,8 +105,8 @@ def handle_file_input():
         print(f"{Fore.RED}Error reading file: {str(e)}{Style.RESET_ALL}")
         return None, None
 
-def save_feedback(code, feedback, filename=None):
-    """Save the code and feedback to a file."""
+def save_feedback(code, feedback, corrected_code=None, filename=None):
+    """Save the code, feedback, and corrected code to a file."""
     if not filename:
         filename = "cognito_feedback.txt"
     
@@ -97,8 +119,127 @@ def save_feedback(code, feedback, filename=None):
         clean_feedback = clean_feedback.replace(Fore.YELLOW, '').replace(Fore.BLUE, '')
         clean_feedback = clean_feedback.replace(Style.RESET_ALL, '')
         file.write(clean_feedback)
+        
+        if corrected_code:
+            file.write("\n\n=== CORRECTED CODE ===\n\n")
+            file.write(corrected_code)
     
     print(f"\n{Fore.GREEN}Feedback saved to {filename}{Style.RESET_ALL}")
+
+def highlight_code_with_issues(code, issues):
+    """Highlight lines with issues in the code."""
+    lines = code.split('\n')
+    result = []
+    
+    # Track which lines have issues
+    issue_lines = {}
+    for issue in issues:
+        if hasattr(issue, 'get'):
+            line = issue.get('line', 0)
+            if line > 0 and line <= len(lines):
+                if line not in issue_lines:
+                    issue_lines[line] = []
+                issue_lines[line].append(issue)
+    
+    # Add each line, highlighting those with issues
+    for i, line in enumerate(lines, 1):
+        if i in issue_lines:
+            result.append(f"{Fore.RED}{i:4d} | {line}{Style.RESET_ALL}")
+            # Add issue description
+            for issue in issue_lines[i]:
+                if hasattr(issue, 'get'):
+                    message = issue.get('message', '')
+                    if message:
+                        result.append(f"     | {Fore.RED}^ {message}{Style.RESET_ALL}")
+        else:
+            result.append(f"{i:4d} | {line}")
+    
+    return '\n'.join(result)
+
+def extract_issues_from_feedback(feedback_items):
+    """Extract issues from feedback items to use for code correction."""
+    issues = []
+    
+    # Process readability issues
+    if 'readability' in feedback_items:
+        readability = feedback_items['readability']
+        if isinstance(readability, str) and 'consider improving' in readability.lower():
+            parts = readability.split(': ', 1)
+            if len(parts) > 1:
+                issues.append({
+                    'type': 'readability',
+                    'message': parts[1],
+                    'line': 0  # Generic issue, not line-specific
+                })
+    
+    # Process performance issues
+    if 'performance' in feedback_items:
+        performance = feedback_items['performance']
+        if isinstance(performance, list):
+            for item in performance:
+                if 'nested loops' in item.lower():
+                    # Try to find the line with nested loops
+                    issues.append({
+                        'type': 'performance',
+                        'message': item,
+                        'line': find_line_with_pattern(feedback_items.get('code', ''), r'for\s+.+\s+in.+:.*\n\s+for')
+                    })
+                elif 'recursive' in item.lower():
+                    issues.append({
+                        'type': 'performance',
+                        'message': item,
+                        'line': find_line_with_pattern(feedback_items.get('code', ''), r'def\s+\w+[^)]*\):[^:]+\w+\(')
+                    })
+        elif isinstance(performance, str) and 'looks good' not in performance.lower():
+            issues.append({
+                'type': 'performance',
+                'message': performance,
+                'line': 0
+            })
+    
+    # Process security issues
+    if 'security' in feedback_items:
+        security = feedback_items['security']
+        if isinstance(security, list):
+            for item in security:
+                # Try to identify the specific function and its line
+                func_name = None
+                if 'eval' in item.lower():
+                    func_name = 'eval'
+                elif 'open' in item.lower():
+                    func_name = 'open'
+                
+                issues.append({
+                    'type': 'security',
+                    'message': item,
+                    'func_name': func_name,
+                    'line': find_line_with_pattern(feedback_items.get('code', ''), fr'{func_name}\s*\(') if func_name else 0
+                })
+        elif isinstance(security, str) and 'no' not in security.lower():
+            issues.append({
+                'type': 'security',
+                'message': security,
+                'line': 0
+            })
+    
+    return issues
+
+def find_line_with_pattern(code, pattern):
+    """Find the line number containing a regex pattern."""
+    import re
+    lines = code.split('\n')
+    for i, line in enumerate(lines, 1):
+        if re.search(pattern, line):
+            return i
+    
+    # If we're looking for a pattern that might span multiple lines
+    code_flat = '\n'.join(lines)
+    match = re.search(pattern, code_flat)
+    if match:
+        # Count lines up to the match position
+        return code_flat[:match.start()].count('\n') + 1
+    
+    return 0
 
 def main():
     """Main application entry point."""
@@ -155,6 +296,7 @@ def main():
             
             # Analysis process
             all_feedback = ""
+            feedback_items = {'code': code_input}
             
             # Readability Analysis
             print_section_header("Readability Analysis")
@@ -163,6 +305,7 @@ def main():
                 formatted_feedback = format_suggestion(readability_feedback, "readability")
                 print(formatted_feedback)
                 all_feedback += f"Readability Analysis:\n{readability_feedback}\n\n"
+                feedback_items['readability'] = readability_feedback
             except Exception as e:
                 error_msg = f"Error in readability analysis: {str(e)}"
                 print(f"{Fore.RED}✗ {error_msg}{Style.RESET_ALL}")
@@ -176,6 +319,7 @@ def main():
                 formatted_feedback = format_suggestion(complexity_feedback, "performance")
                 print(formatted_feedback)
                 all_feedback += f"Performance Analysis:\n{complexity_feedback}\n\n"
+                feedback_items['performance'] = complexity_feedback
             except Exception as e:
                 error_msg = f"Error in performance analysis: {str(e)}"
                 print(f"{Fore.RED}✗ {error_msg}{Style.RESET_ALL}")
@@ -189,6 +333,7 @@ def main():
                 formatted_feedback = format_suggestion(memory_feedback, "memory")
                 print(formatted_feedback)
                 all_feedback += f"Memory Usage Analysis:\n{memory_feedback}\n\n"
+                feedback_items['memory'] = memory_feedback
             except Exception as e:
                 error_msg = f"Error in memory analysis: {str(e)}"
                 print(f"{Fore.RED}✗ {error_msg}{Style.RESET_ALL}")
@@ -203,11 +348,45 @@ def main():
                 formatted_feedback = format_suggestion(security_issues, "security")
                 print(formatted_feedback)
                 all_feedback += f"Security Analysis:\n{security_feedback}\n\n"
+                feedback_items['security'] = security_issues
             except Exception as e:
                 error_msg = f"Error in security analysis: {str(e)}"
                 print(f"{Fore.RED}✗ {error_msg}{Style.RESET_ALL}")
                 all_feedback += f"Security Analysis:\n{error_msg}\n\n"
                 logger.error(error_msg, exc_info=True)
+            
+            # Extract issues for code correction
+            issues = extract_issues_from_feedback(feedback_items)
+            
+            # Code Correction
+            print_section_header("Code Correction")
+            try:
+                corrector = CodeCorrector(language)
+                corrected_code = corrector.correct_code(code_input, issues)
+                
+                # Check if code was actually corrected
+                if corrected_code != code_input:
+                    print(f"{Fore.GREEN}✓ Code can be improved! Here's the highlighted version with issues:{Style.RESET_ALL}\n")
+                    highlighted_code = highlight_code_with_issues(code_input, issues)
+                    print(highlighted_code)
+                    
+                    print(f"\n{Fore.GREEN}✓ Corrected code:{Style.RESET_ALL}\n")
+                    print(corrected_code)
+                    
+                    # Show the differences
+                    print(f"\n{Fore.CYAN}Would you like to see a diff of the changes? (y/n): {Style.RESET_ALL}")
+                    show_diff = input().lower()
+                    if show_diff == 'y':
+                        diff = corrector.generate_diff(code_input, corrected_code)
+                        print(f"\n{diff}")
+                else:
+                    print(f"{Fore.YELLOW}✓ No automatic corrections available for the identified issues.{Style.RESET_ALL}")
+                    corrected_code = None
+            except Exception as e:
+                error_msg = f"Error in code correction: {str(e)}"
+                print(f"{Fore.RED}✗ {error_msg}{Style.RESET_ALL}")
+                logger.error(error_msg, exc_info=True)
+                corrected_code = None
             
             # Ask if user wants to save feedback
             print_separator()
@@ -215,10 +394,10 @@ def main():
             if save_option.lower() == 'y':
                 custom_filename = input(f"{Fore.CYAN}Enter filename (or press Enter for default): {Style.RESET_ALL}")
                 if custom_filename:
-                    save_feedback(code_input, all_feedback, custom_filename)
+                    save_feedback(code_input, all_feedback, corrected_code, custom_filename)
                 else:
                     default_name = f"cognito_feedback_{filename.split('.')[0]}.txt" if filename else "cognito_feedback.txt"
-                    save_feedback(code_input, all_feedback, default_name)
+                    save_feedback(code_input, all_feedback, corrected_code, default_name)
 
     except KeyboardInterrupt:
         print(f"\n\n{Fore.GREEN}Exiting Cognito. Thank you for using our code review assistant!{Style.RESET_ALL}")

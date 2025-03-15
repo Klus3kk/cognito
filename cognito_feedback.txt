@@ -1,0 +1,142 @@
+=== CODE ANALYZED ===
+
+def calculate_fibonacci(n):
+    # This function calculates Fibonacci numbers inefficiently
+    if n <= 0:
+        return []
+    elif n == 1:
+        return [0]
+    
+    # Using recursion which is inefficient for Fibonacci
+    def fib(n):
+        if n <= 1:
+            return n
+        else:
+            return fib(n-1) + fib(n-2)
+    
+    return [fib(i) for i in range(n)]
+
+def process_data(input_file):
+    # Opening file without proper error handling
+    f = open(input_file, 'r')
+    data = f.readlines()
+    
+    # Inefficient string concatenation in a loop
+    result = ""
+    for line in data:
+        result = result + line.strip() + ";"
+    
+    # Security issue: eval on input data
+    processed = eval("len(data) + 100")
+    
+    return result, processed
+
+# Global variable
+counter = 0
+
+# Function with too many nested loops
+def process_matrix(matrix):
+    global counter
+    result = []
+    
+    # Nested loops - O(n³) complexity
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            for k in range(len(matrix)):
+                counter += 1
+                if matrix[i][j] > 0:
+                    result.append(matrix[i][j] * k)
+    
+    return result
+
+=== FEEDBACK ===
+
+Readability Analysis:
+Consider improving readability: Inconsistent indentation detected
+
+Performance Analysis:
+['Code contains deeply nested loops. Consider refactoring to reduce time complexity.', 'Recursive function detected. Ensure it has a base case to avoid infinite recursion.']
+
+Memory Usage Analysis:
+Memory usage: 0.00 MB
+
+Security Analysis:
+Security Analysis: The following issues were found:
+- Potential security issue: open - Ensure proper file handling and permissions checking.
+- Potential security issue: eval - Code injection risk. Consider safer alternatives.
+
+Recommendation: Review OWASP Top 10 guidelines for secure coding practices.
+
+
+
+=== CORRECTED CODE ===
+
+def calculate_fibonacci(n):
+    # This function calculates Fibonacci numbers inefficiently
+    if n <= 0:
+        return []
+    elif n == 1:
+        return [0]
+    
+    # Using recursion which is inefficient for Fibonacci
+    def fib(n):
+        if n <= 1:
+            return n
+        else:
+            return fib(n-1) + fib(n-2)
+    
+    return [fib(i) for i in range(n)]
+
+def process_data(input_file):
+    # Opening file without proper error handling
+    # FIXED: f = open(input_file, 'r')
+    # FIXED: Replaced unsafe file handling with context manager
+    # Original: f = open(input_file, 'r')
+    try:
+        with open(input_file, 'r') as file_handler:
+            data = file_handler.readlines()  # Direct assignment to data variable
+    except FileNotFoundError:
+        print(f"File not found: {input_file}")  # Handle error appropriately
+        data = []  # Provide a default value
+    except IOError as e:
+        print(f"I/O error: {e}")  # Handle error appropriately
+        data = []  # Provide a default value
+    data = f.readlines()
+    
+    # Inefficient string concatenation in a loop
+    result = ""
+    for line in data:
+        result = result + line.strip() + ";"
+    
+    # Security issue: eval on input data
+    # WARNING: Unsafe eval detected - removing:
+    # processed = eval("len(data) + 100")
+    import ast  # Add import at the top of your file
+    processed = ast.literal_eval("len(data)  # Safe alternative
+    
+    return result, processed
+
+# Global variable
+counter = 0
+
+# Function with too many nested loops
+def process_matrix(matrix):
+    global counter
+    result = []
+    
+    # Nested loops - O(n³) complexity
+    # PERFORMANCE IMPROVEMENT SUGGESTION:
+    # The current nested loop structure has high time complexity.
+    # Consider using numpy for matrix operations or list comprehensions:
+    # import numpy as np
+    # result = np.array(matrix).reshape(-1)  # Flatten to 1D
+    # Or with list comprehensions:
+    # result = [val for row in matrix for val in row]  # Flattens 2D array
+    for i in range(len(matrix)):
+        for j in range(len(matrix[i])):
+            for k in range(len(matrix)):
+                counter += 1
+                if matrix[i][j] > 0:
+                    result.append(matrix[i][j] * k)
+    
+    return result
