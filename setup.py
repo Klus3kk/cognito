@@ -4,9 +4,11 @@ setup(
     name="cognito",
     version="0.1.0",
     packages=find_packages(),
+    package_dir={"": "src"},  
+    py_modules=["main"],      
     install_requires=[
         "pytest",
-        "nltk",
+        "nltk", 
         "transformers",
         "datasets",
         "huggingface-hub",
@@ -16,7 +18,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'cognito=src.main:main',
+            'cognito=main:main',  
         ],
     },
 )
