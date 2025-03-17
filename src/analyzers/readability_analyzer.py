@@ -12,6 +12,11 @@ logger = logging.getLogger(__name__)
 # Suppress unnecessary warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="torch")
 
+# Global variables to track model status
+MODEL_LOADED = False
+tokenizer = None
+model = None
+
 # Try to authenticate with Hugging Face
 try:
     # Check if token is in environment variables
@@ -24,28 +29,30 @@ try:
 except Exception as e:
     logger.error(f"Error authenticating with Hugging Face: {e}")
 
-# Global variables to track model status
-MODEL_LOADED = False
-tokenizer = None
-model = None
-
-# Try loading models with proper error handling
+# Model loading with better error handling
 try:
-    # Load tokenizer with authentication options
-    tokenizer = AutoTokenizer.from_pretrained(
-        "microsoft/codebert-base", 
-        use_auth_token=os.environ.get("HUGGINGFACE_TOKEN")
-    )
-    
-    # Load model with the same options
-    model = AutoModelForSequenceClassification.from_pretrained(
-        "microsoft/codebert-base", 
-        use_auth_token=os.environ.get("HUGGINGFACE_TOKEN")
-    )
-    
-    MODEL_LOADED = True
-    logger.info("Successfully loaded CodeBERT model and tokenizer")
-    
+    # If token is available, try to load models
+    if os.environ.get("HUGGINGFACE_TOKEN"):
+        # Load tokenizer with authentication options
+        tokenizer = AutoTokenizer.from_pretrained(
+            "microsoft/codebert-base", 
+            use_auth_token=os.environ.get("HUGGINGFACE_TOKEN")
+        )
+        
+        # Load model with the same options
+        model = AutoModelForSequenceClassification.from_pretrained(
+            "microsoft/codebert-base", 
+            use_auth_token=os.environ.get("HUGGINGFACE_TOKEN"),
+            num_labels=2
+        )
+        
+        MODEL_LOADED = True
+        logger.info("Successfully loaded CodeBERT model and tokenizer")
+    else:
+        # No token, don't try to load model
+        logger.info("Skipping CodeBERT model loading due to missing token")
+        MODEL_LOADED = False
+        
 except Exception as e:
     logger.error(f"Error loading CodeBERT model: {e}")
     MODEL_LOADED = False
@@ -79,6 +86,7 @@ def analyze_readability(code_snippet):
             return fallback_readability_analysis(code_snippet)
     else:
         # Use fallback function when model isn't loaded
+        logger.info("Using fallback readability analysis (ML model not available)")
         return fallback_readability_analysis(code_snippet)
 
 def fallback_readability_analysis(code_snippet):

@@ -1,7 +1,9 @@
 """
-Enhanced main module for Cognito with code correction functionality and LLM integration.
+Enhanced main module for Cognito with code correction functionality, LLM integration,
+and a feedback-driven learning system.
 
-This is an improved version of the main.py that adds code correction features and LLM capabilities.
+This is an improved version of the main.py that adds code correction features,
+LLM capabilities, and continuous improvement through user feedback.
 """
 
 import os
@@ -10,6 +12,7 @@ import logging
 import argparse
 from colorama import init, Fore, Style
 from pathlib import Path
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,6 +37,28 @@ try:
     # Import the code corrector
     from code_correction import CodeCorrector
     from code_correction import extract_issues_from_feedback
+    
+    # Try to import feedback collector - this is optional
+    try:
+        from feedback.collector import FeedbackCollector
+        feedback_collector_available = True
+    except ImportError:
+        feedback_collector_available = False
+        
+    # Try to import metrics reporter - this is optional
+    try:
+        from reports.improvement_metrics import ImprovementMetricsReporter
+        metrics_reporter_available = True
+    except ImportError:
+        metrics_reporter_available = False
+        
+    # Try to import learning LLM enhancer - this is optional
+    try:
+        from llm.learning_enhancer import LearningLLMIntegration
+        learning_llm_available = True
+    except ImportError:
+        learning_llm_available = False
+        
 except ImportError as e:
     logger.error(f"Error importing modules: {e}")
     print(f"{Fore.RED}Error: Could not import required modules. Make sure you're running from the project root.{Style.RESET_ALL}")
@@ -55,7 +80,7 @@ def print_logo():
     ╚██████╗╚██████╔╝╚██████╔╝██║ ╚████║██║   ██║   ╚██████╔╝
      ╚═════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝╚═╝   ╚═╝    ╚═════╝ 
     {Style.RESET_ALL}
-    {Fore.GREEN}AI-Powered Code Review Assistant {Style.RESET_ALL}v0.2.0
+    {Fore.GREEN}AI-Powered Code Review Assistant {Style.RESET_ALL}v0.3.0
     """
     print(logo)
 
@@ -176,6 +201,92 @@ def find_line_with_pattern(code, pattern):
     
     return 0
 
+def process_suggestion_feedback(suggestion, all_feedback):
+    """Get user feedback on a suggestion and update the learning system."""
+    if not feedback_collector_available:
+        return all_feedback
+        
+    print(f"\n{Fore.CYAN}Was this suggestion helpful? (y/n): {Style.RESET_ALL}")
+    feedback = input().lower()
+    
+    if feedback == 'y':
+        accepted = True
+        print(f"{Fore.GREEN}Great! Any comments on why this was helpful? (Enter to skip){Style.RESET_ALL}")
+    else:
+        accepted = False
+        print(f"{Fore.YELLOW}Thanks for the feedback. Any comments on why this wasn't helpful? (Enter to skip){Style.RESET_ALL}")
+    
+    comment = input()
+    
+    # Add to the feedback system
+    try:
+        feedback_collector = FeedbackCollector()
+        feedback_collector.add_feedback(suggestion, accepted, comment if comment else None)
+        
+        # Show improvement metrics
+        metrics = feedback_collector.get_metrics()
+        print(f"\n{Fore.CYAN}System learning progress:{Style.RESET_ALL}")
+        print(f"Total suggestions processed: {metrics['total_suggestions']}")
+        print(f"Current acceptance rate: {metrics['acceptance_rate']}%")
+        
+        if metrics['total_suggestions'] > 10:
+            improvement = feedback_collector.get_improvement_metrics(interval_days=30)
+            if improvement['previous_period']['total'] > 0:
+                print(f"Suggestion quality improved by {improvement['acceptance_improvement_percentage']}% over the last month")
+    except Exception as e:
+        logger.error(f"Error processing feedback: {e}")
+        print(f"{Fore.YELLOW}Feedback recorded, but could not update learning system: {str(e)}{Style.RESET_ALL}")
+    
+    all_feedback += f"User feedback on suggestion: {'Accepted' if accepted else 'Rejected'}\n"
+    if comment:
+        all_feedback += f"Comment: {comment}\n\n"
+    
+    return all_feedback
+
+def generate_improvement_report():
+    """Generate and display a report of improvement metrics."""
+    if not metrics_reporter_available:
+        print(f"{Fore.RED}Error: Metrics reporter module not available.{Style.RESET_ALL}")
+        return
+        
+    try:
+        reporter = ImprovementMetricsReporter()
+        report_file = reporter.generate_improvement_report()
+        print(f"\n{Fore.GREEN}Improvement metrics report generated: {report_file}{Style.RESET_ALL}")
+        
+        # Display CV-worthy metrics
+        metrics = FeedbackCollector().get_metrics()
+        if metrics["total_suggestions"] > 0:
+            print(f"\n{Fore.CYAN}CV-Worthy Metrics:{Style.RESET_ALL}")
+            
+            # Overall acceptance rate
+            print(f"• Overall suggestion acceptance rate: {metrics['acceptance_rate']}%")
+            
+            # If we have enough data for improvement metrics
+            if metrics["total_suggestions"] > 10:
+                try:
+                    monthly = reporter.feedback_collector.get_improvement_metrics(interval_days=30)
+                    if monthly["previous_period"]["total"] > 0:
+                        improvement = monthly["acceptance_improvement_percentage"]
+                        print(f"• Improved suggestion acceptance rate by {improvement}% over one month")
+                except:
+                    pass
+                    
+            # Show category-specific metrics
+            for category in ["Security", "Readability", "Performance"]:
+                try:
+                    cat_metrics = reporter.feedback_collector.get_suggestion_performance(category)
+                    if cat_metrics["total"] > 5:
+                        print(f"• {category} suggestion acceptance rate: {cat_metrics['acceptance_rate']}%")
+                except:
+                    pass
+        else:
+            print(f"\n{Fore.YELLOW}Not enough feedback data yet to generate metrics.{Style.RESET_ALL}")
+            print("Use Cognito more and provide feedback on suggestions to build up metrics.")
+    except Exception as e:
+        logger.error(f"Error generating report: {e}")
+        print(f"{Fore.RED}Error generating report: {str(e)}{Style.RESET_ALL}")
+
 def main():
     """Main application entry point."""
     # Parse command line arguments
@@ -184,7 +295,14 @@ def main():
     parser.add_argument("--language", help="Force language detection (python, c)")
     parser.add_argument("--output", help="Output file for analysis results")
     parser.add_argument("--use-llm", action="store_true", help="Use LLM to enhance analysis")
+    parser.add_argument("--report", action="store_true", help="Generate improvement metrics report")
+    parser.add_argument("--adaptive", action="store_true", help="Use feedback-adaptive LLM mode")
     args = parser.parse_args()
+    
+    # Handle report generation request
+    if args.report:
+        generate_improvement_report()
+        return
     
     try:
         # If direct file input is provided, analyze it
@@ -197,9 +315,18 @@ def main():
                     # Detect or force language
                     language = args.language or detect_language(code_input)
                     
-                    # Analyze code
-                    print(f"Analyzing {filename} as {language}...")
-                    analysis_results = analyze_code(code_input, filename, language, use_llm=args.use_llm)
+                    # Select the appropriate LLM enhancer based on args
+                    if args.use_llm and args.adaptive and learning_llm_available:
+                        print(f"Analyzing {filename} as {language} with adaptive LLM enhancement...")
+                        # Use the learning LLM integration for enhanced analysis
+                        from llm.learning_enhancer import LearningLLMIntegration
+                        learning_enhancer = LearningLLMIntegration()
+                        analysis_results = analyze_code(code_input, filename, language, use_llm=True, 
+                                                       llm_integration=learning_enhancer)
+                    else:
+                        # Use standard analysis
+                        print(f"Analyzing {filename} as {language}{' with LLM' if args.use_llm else ''}...")
+                        analysis_results = analyze_code(code_input, filename, language, use_llm=args.use_llm)
                     
                     # Print summary
                     print("\nAnalysis Summary:")
@@ -213,11 +340,29 @@ def main():
                         message = suggestion.get('message', '')
                         priority = suggestion.get('priority', '')
                         print(f"[{priority.upper()}] {category}: {message}")
+                        
+                        # Get feedback if available
+                        if feedback_collector_available:
+                            process_suggestion_feedback(suggestion, "")
                     
                     # If LLM was used, print those insights
                     if args.use_llm and 'code_explanation' in analysis_results:
                         print("\nCode Explanation:")
                         print(analysis_results['code_explanation'])
+                        
+                        if 'ai_review' in analysis_results:
+                            print("\nAI Review:")
+                            print(analysis_results['ai_review'])
+                        
+                        # If adaptive mode was used, print adaptation insights
+                        if args.adaptive and 'adaptation_insights' in analysis_results:
+                            insights = analysis_results['adaptation_insights']
+                            if insights.get('total_suggestions_processed', 0) > 0:
+                                print("\nAdaptation Insights:")
+                                print(f"System has processed {insights.get('total_suggestions_processed', 0)} suggestions to date")
+                                improvement = insights.get('monthly_improvement', {}).get('acceptance_improvement_percentage')
+                                if improvement:
+                                    print(f"Suggestion quality improved by {improvement}% over the last month")
                         
                     # Save results if output file is specified
                     if args.output:
@@ -241,7 +386,8 @@ def main():
             print(f"\n{Fore.CYAN}Choose an option:{Style.RESET_ALL}")
             print("1. Enter code snippet")
             print("2. Load code from file")
-            print("3. Exit")
+            print("3. View improvement metrics")
+            print("4. Exit")
             
             choice = input(f"\n{Fore.CYAN}> {Style.RESET_ALL}")
             
@@ -267,6 +413,10 @@ def main():
                     continue
             
             elif choice == '3':
+                generate_improvement_report()
+                continue
+                
+            elif choice == '4':
                 print(f"\n{Fore.GREEN}Thank you for using Cognito! Goodbye!{Style.RESET_ALL}")
                 sys.exit(0)
             
@@ -277,14 +427,38 @@ def main():
             # Detect language
             language = detect_language(code_input)
             print(f"\n{Fore.CYAN}Detected language: {language}{Style.RESET_ALL}")
-            print(f"{Fore.CYAN}Analyzing code{' with LLM' if args.use_llm else ''}...{Style.RESET_ALL}")
+            
+            # Check if the user wants to use LLM enhancement
+            use_llm = False
+            if not args.use_llm:  # Only ask if not already specified in args
+                llm_option = input(f"{Fore.CYAN}Would you like to use AI enhancement? (y/n): {Style.RESET_ALL}").lower()
+                use_llm = llm_option == 'y'
+            else:
+                use_llm = args.use_llm
+                
+            # Check if the user wants to use adaptive mode
+            use_adaptive = False
+            if use_llm and learning_llm_available and not args.adaptive:  # Only ask if using LLM and not in args
+                adaptive_option = input(f"{Fore.CYAN}Use adaptive AI that learns from feedback? (y/n): {Style.RESET_ALL}").lower()
+                use_adaptive = adaptive_option == 'y'
+            else:
+                use_adaptive = args.adaptive
+                
+            # Analyze code
+            print(f"{Fore.CYAN}Analyzing code{' with adaptive AI' if use_adaptive else ' with LLM' if use_llm else ''}...{Style.RESET_ALL}")
             
             # Analysis process
             all_feedback = ""
             feedback_items = {'code': code_input}
             
-            # Use unified analyzer
-            analysis_results = analyze_code(code_input, filename, language, use_llm=args.use_llm)
+            # Use appropriate analyzer based on options
+            if use_llm and use_adaptive and learning_llm_available:
+                from llm.learning_enhancer import LearningLLMIntegration
+                learning_enhancer = LearningLLMIntegration()
+                analysis_results = analyze_code(code_input, filename, language, use_llm=True,
+                                               llm_integration=learning_enhancer)
+            else:
+                analysis_results = analyze_code(code_input, filename, language, use_llm=use_llm)
             
             # Readability Analysis
             print_section_header("Readability Analysis")
@@ -343,7 +517,7 @@ def main():
                 logger.error(error_msg, exc_info=True)
             
             # Display LLM insights if available
-            if args.use_llm:
+            if use_llm:
                 print_section_header("AI-Enhanced Insights")
                 if 'code_explanation' in analysis_results:
                     print(f"{Fore.GREEN}✓ Code Explanation:{Style.RESET_ALL}")
@@ -354,6 +528,18 @@ def main():
                     print(f"{Fore.GREEN}✓ AI Review:{Style.RESET_ALL}")
                     print(analysis_results['ai_review'])
                     all_feedback += f"AI Review:\n{analysis_results['ai_review']}\n\n"
+                    
+                # If adaptive mode was used, show adaptation insights
+                if use_adaptive and 'adaptation_insights' in analysis_results:
+                    insights = analysis_results['adaptation_insights']
+                    if insights.get('total_suggestions_processed', 0) > 0:
+                        print(f"\n{Fore.GREEN}✓ Adaptation Insights:{Style.RESET_ALL}")
+                        print(f"System has processed {insights.get('total_suggestions_processed', 0)} suggestions")
+                        
+                        improvement = insights.get('monthly_improvement', {}).get('acceptance_improvement_percentage')
+                        if improvement:
+                            print(f"Suggestion quality improved by {improvement}% over the last month")
+                            all_feedback += f"Suggestion quality improved by {improvement}% over the last month\n\n"
             
             # Extract issues for code correction
             issues = extract_issues_from_feedback(feedback_items)
@@ -373,6 +559,17 @@ def main():
                     print(f"\n{Fore.GREEN}✓ Corrected code:{Style.RESET_ALL}\n")
                     print(corrected_code)
                     
+                    # Get feedback on this correction
+                    if feedback_collector_available:
+                        print(f"\n{Fore.CYAN}Was this correction helpful? (y/n): {Style.RESET_ALL}")
+                        correction_feedback = input().lower()
+                        correction_suggestion = {
+                            "category": "Code Correction",
+                            "message": "Automatic code correction",
+                            "priority": "medium"
+                        }
+                        all_feedback = process_suggestion_feedback(correction_suggestion, all_feedback)
+                    
                     # Show the differences
                     print(f"\n{Fore.CYAN}Would you like to see a diff of the changes? (y/n): {Style.RESET_ALL}")
                     show_diff = input().lower()
@@ -387,6 +584,18 @@ def main():
                 print(f"{Fore.RED}✗ {error_msg}{Style.RESET_ALL}")
                 logger.error(error_msg, exc_info=True)
                 corrected_code = None
+            
+            # Process suggestion feedback
+            if feedback_collector_available and analysis_results.get('suggestions'):
+                print_section_header("Suggestion Feedback")
+                print(f"{Fore.CYAN}Please provide feedback on our suggestions to help improve the system:{Style.RESET_ALL}")
+                
+                # Get feedback on up to 3 suggestions
+                for i, suggestion in enumerate(analysis_results.get('suggestions', [])[:3]):
+                    category = suggestion.get('category', '')
+                    message = suggestion.get('message', '')
+                    print(f"\n{Fore.YELLOW}Suggestion {i+1}: [{category}] {message}{Style.RESET_ALL}")
+                    all_feedback = process_suggestion_feedback(suggestion, all_feedback)
             
             # Ask if user wants to save feedback
             print_separator()

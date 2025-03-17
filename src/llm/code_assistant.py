@@ -12,18 +12,17 @@ import os
 from typing import Dict, List, Any, Optional, Union
 import logging
 
-from langchain import PromptTemplate
-from langchain.chains import LLMChain, SequentialChain
+# Updated imports for LangChain
+from langchain_core.prompts import PromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.messages import SystemMessage
+from langchain_openai import ChatOpenAI
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain.memory import ConversationBufferMemory
+from langchain.chains import LLMChain
 from langchain.agents import Tool, initialize_agent
-from langchain.prompts import MessagesPlaceholder
-from langchain.schema import SystemMessage
-from langchain.chat_models import ChatOpenAI
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.callbacks.manager import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -50,28 +49,31 @@ class CodeAssistant:
         self.temperature = temperature
         
         # Initialize the LLM
-        self.llm = ChatOpenAI(
-            model_name=self.model_name,
-            temperature=self.temperature,
-            openai_api_key=self.api_key,
-            streaming=True,
-            callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
-        )
-        
-        # Initialize embeddings for semantic search
-        self.embeddings = OpenAIEmbeddings(openai_api_key=self.api_key)
-        
-        # Initialize conversation memory
-        self.memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True
-        )
-        
-        # Create the chains and agent
-        self._initialize_chains()
-        self._initialize_agent()
-        
-        logger.info(f"Code Assistant initialized with model: {model_name}")
+        try:
+            self.llm = ChatOpenAI(
+                model_name=self.model_name,
+                temperature=self.temperature,
+                openai_api_key=self.api_key,
+                streaming=True
+            )
+            
+            # Initialize embeddings for semantic search
+            self.embeddings = OpenAIEmbeddings(openai_api_key=self.api_key)
+            
+            # Initialize conversation memory
+            self.memory = ConversationBufferMemory(
+                memory_key="chat_history",
+                return_messages=True
+            )
+            
+            # Create the chains and agent
+            self._initialize_chains()
+            self._initialize_agent()
+            
+            logger.info(f"Code Assistant initialized with model: {model_name}")
+        except Exception as e:
+            logger.error(f"Error initializing LLM components: {str(e)}")
+            self.llm_available = False
     
     def _initialize_chains(self):
         """Initialize the various LLM chains for code tasks."""
@@ -164,114 +166,53 @@ class CodeAssistant:
         """Initialize the code assistant agent."""
         if not self.llm_available:
             return
+        
+        try:    
+            # Define tools the agent can use
+            tools = [
+                Tool(
+                    name="ExplainCode",
+                    func=lambda code: self.explanation_chain.run(code=code),
+                    description="Explains code in simple terms. Input should be a code snippet."
+                ),
+                Tool(
+                    name="ReviewCode",
+                    func=lambda x: self.review_chain.run(
+                        code=x.get("code", ""),
+                        analysis_results=x.get("analysis_results", "No analysis results provided.")
+                    ),
+                    description="Reviews code and provides feedback. Input should be a JSON with 'code' and 'analysis_results' keys."
+                ),
+                Tool(
+                    name="SuggestRefactoring",
+                    func=lambda x: self.refactor_chain.run(
+                        code=x.get("code", ""),
+                        issue=x.get("issue", "Improve code quality")
+                    ),
+                    description="Suggests ways to refactor code. Input should be a JSON with 'code' and 'issue' keys."
+                )
+            ]
             
-        # Define tools the agent can use
-        tools = [
-            Tool(
-                name="ExplainCode",
-                func=lambda code: self.explanation_chain.run(code=code),
-                description="Explains code in simple terms. Input should be a code snippet."
-            ),
-            Tool(
-                name="ReviewCode",
-                func=lambda x: self.review_chain.run(
-                    code=x.get("code", ""),
-                    analysis_results=x.get("analysis_results", "No analysis results provided.")
-                ),
-                description="Reviews code and provides feedback. Input should be a JSON with 'code' and 'analysis_results' keys."
-            ),
-            Tool(
-                name="SuggestRefactoring",
-                func=lambda x: self.refactor_chain.run(
-                    code=x.get("code", ""),
-                    issue=x.get("issue", "Improve code quality")
-                ),
-                description="Suggests ways to refactor code. Input should be a JSON with 'code' and 'issue' keys."
+            # Create the agent - using simple string for system message to avoid template issues
+            system_message = "You are CognitoGPT, an AI coding assistant integrated with the Cognito code analysis tool. You can explain code, review code, and suggest refactorings. You're helpful, concise, and technical. When providing code suggestions, focus on practical, proven solutions. Always format code blocks using markdown syntax with the appropriate language."
+            
+            self.agent = initialize_agent(
+                tools,
+                self.llm,
+                agent="chat-conversational-react-description",
+                verbose=True,
+                memory=self.memory,
+                agent_kwargs={
+                    "system_message": system_message,
+                    "extra_prompt_messages": [MessagesPlaceholder(variable_name="chat_history")]
+                }
             )
-        ]
-        
-        # Create the agent
-        system_message = SystemMessage(
-            content="""You are CognitoGPT, an AI coding assistant integrated with the Cognito code analysis tool.
-            You can explain code, review code, and suggest refactorings. You're helpful, concise, and technical.
-            When providing code suggestions, focus on practical, proven solutions.
-            Always format code blocks using markdown syntax with the appropriate language.
-            """
-        )
-        
-        self.agent = initialize_agent(
-            tools,
-            self.llm,
-            agent="chat-conversational-react-description",
-            verbose=True,
-            memory=self.memory,
-            agent_kwargs={
-                "system_message": system_message,
-                "extra_prompt_messages": [MessagesPlaceholder(variable_name="chat_history")]
-            }
-        )
-        
-        logger.info("Code Assistant agent initialized successfully")
-    
-    def create_vectorstore_from_code(self, code_files: Dict[str, str]) -> None:
-        """
-        Create a vector store from a collection of code files for semantic search.
-        
-        Args:
-            code_files: Dictionary of filename to code content
-        """
-        if not self.llm_available:
-            logger.warning("LLM features not available. Skipping vector store creation.")
-            return
             
-        # Combine all files into documents
-        documents = []
-        for file_path, content in code_files.items():
-            documents.append({
-                "content": content,
-                "metadata": {"source": file_path}
-            })
-        
-        # Split text into chunks
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
-            separators=["\n\n", "\n", " ", ""]
-        )
-        
-        texts = []
-        metadatas = []
-        for doc in documents:
-            chunks = text_splitter.split_text(doc["content"])
-            for chunk in chunks:
-                texts.append(chunk)
-                metadatas.append({"source": doc["metadata"]["source"]})
-        
-        # Create vector store
-        self.vectorstore = FAISS.from_texts(
-            texts=texts,
-            embedding=self.embeddings,
-            metadatas=metadatas
-        )
-        
-        logger.info(f"Vector store created with {len(texts)} chunks from {len(code_files)} files")
-    
-    def semantic_code_search(self, query: str, n_results: int = 5) -> List[Dict]:
-        """
-        Search for code semantically using the query.
-        
-        Args:
-            query: Natural language query
-            n_results: Number of results to return
-            
-        Returns:
-            List of relevant code chunks with metadata
-        """
-        if not self.llm_available or not hasattr(self, "vectorstore"):
-            return [{"content": "LLM features not available or no code indexed.", "metadata": {}}]
-            
-        results = self.vectorstore.similarity_search(query, k=n_results)
-        return [{"content": doc.page_content, "metadata": doc.metadata} for doc in results]
+            logger.info("Code Assistant agent initialized successfully")
+        except Exception as e:
+            logger.error(f"Error initializing agent: {str(e)}")
+            # Graceful degradation - we'll continue without the agent
+            self.agent = None
     
     def explain_code(self, code: str) -> str:
         """
@@ -285,8 +226,12 @@ class CodeAssistant:
         """
         if not self.llm_available:
             return "LLM features not available. Please set OPENAI_API_KEY."
-            
-        return self.explanation_chain.run(code=code)
+        
+        try:
+            return self.explanation_chain.run(code=code)
+        except Exception as e:
+            logger.error(f"Error in code explanation: {e}")
+            return f"Could not generate explanation: {str(e)}"
     
     def review_code(self, code: str, analysis_results: str) -> str:
         """
@@ -301,8 +246,12 @@ class CodeAssistant:
         """
         if not self.llm_available:
             return "LLM features not available. Please set OPENAI_API_KEY."
-            
-        return self.review_chain.run(code=code, analysis_results=analysis_results)
+        
+        try:
+            return self.review_chain.run(code=code, analysis_results=analysis_results)
+        except Exception as e:
+            logger.error(f"Error in code review: {e}")
+            return f"Could not generate review: {str(e)}"
     
     def suggest_refactoring(self, code: str, issue: str) -> str:
         """
@@ -317,8 +266,12 @@ class CodeAssistant:
         """
         if not self.llm_available:
             return "LLM features not available. Please set OPENAI_API_KEY."
-            
-        return self.refactor_chain.run(code=code, issue=issue)
+        
+        try:
+            return self.refactor_chain.run(code=code, issue=issue)
+        except Exception as e:
+            logger.error(f"Error in refactoring suggestion: {e}")
+            return f"Could not generate refactoring suggestion: {str(e)}"
     
     def chat(self, user_input: str) -> str:
         """
@@ -332,173 +285,12 @@ class CodeAssistant:
         """
         if not self.llm_available:
             return "LLM features not available. Please set OPENAI_API_KEY."
+        
+        if self.agent is None:
+            return "Chat functionality not available due to initialization error."
             
-        return self.agent.run(user_input)
-
-
-class CognitoLLMEnhancer:
-    """
-    Enhances Cognito analysis results with LLM-powered insights.
-    """
-    
-    def __init__(self):
-        """Initialize the LLM enhancer."""
-        self.code_assistant = CodeAssistant()
-    
-    def enhance_analysis(self, code: str, analysis_results: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Enhance analysis results with LLM-generated insights.
-        
-        Args:
-            code: The code being analyzed
-            analysis_results: Original Cognito analysis results
-            
-        Returns:
-            Enhanced analysis results with LLM insights
-        """
-        if not self.code_assistant.llm_available:
-            analysis_results["llm_insights"] = {
-                "available": False,
-                "message": "LLM features not available. Please set OPENAI_API_KEY."
-            }
-            return analysis_results
-        
-        # Convert analysis results to a string for the LLM
-        analysis_str = self._format_analysis_for_llm(analysis_results)
-        
-        # Get LLM review
-        llm_review = self.code_assistant.review_code(code, analysis_str)
-        
-        # Extract suggestions for top issues
-        top_issues = self._extract_top_issues(analysis_results)
-        refactoring_suggestions = {}
-        
-        for issue_key, issue_desc in top_issues.items():
-            suggestion = self.code_assistant.suggest_refactoring(code, issue_desc)
-            refactoring_suggestions[issue_key] = suggestion
-        
-        # Add LLM insights to results
-        analysis_results["llm_insights"] = {
-            "available": True,
-            "overall_review": llm_review,
-            "refactoring_suggestions": refactoring_suggestions,
-            "code_explanation": self.code_assistant.explain_code(code)
-        }
-        
-        return analysis_results
-    
-    def _format_analysis_for_llm(self, analysis_results: Dict[str, Any]) -> str:
-        """Format the analysis results for the LLM in a readable format."""
-        formatted = "ANALYSIS RESULTS:\n"
-        
-        if "language" in analysis_results:
-            formatted += f"Language: {analysis_results['language']}\n\n"
-        
-        if "summary" in analysis_results:
-            formatted += "SUMMARY:\n"
-            summary = analysis_results["summary"]
-            for key, value in summary.items():
-                if isinstance(value, dict):
-                    formatted += f"- {key.replace('_', ' ').title()}:\n"
-                    for k, v in value.items():
-                        formatted += f"  - {k.replace('_', ' ').title()}: {v}\n"
-                else:
-                    formatted += f"- {key.replace('_', ' ').title()}: {value}\n"
-            formatted += "\n"
-        
-        if "suggestions" in analysis_results:
-            formatted += "SUGGESTIONS:\n"
-            for suggestion in analysis_results["suggestions"]:
-                category = suggestion.get("category", "General")
-                message = suggestion.get("message", "")
-                priority = suggestion.get("priority", "medium")
-                formatted += f"- [{priority.upper()}] {category}: {message}\n"
-        
-        return formatted
-    
-    def _extract_top_issues(self, analysis_results: Dict[str, Any]) -> Dict[str, str]:
-        """Extract the top issues from the analysis results."""
-        top_issues = {}
-        
-        if "suggestions" in analysis_results:
-            suggestions = analysis_results["suggestions"]
-            high_priority = [s for s in suggestions if s.get("priority") == "high"]
-            medium_priority = [s for s in suggestions if s.get("priority") == "medium"]
-            
-            # Take up to 3 high priority issues
-            for i, issue in enumerate(high_priority[:3]):
-                category = issue.get("category", "General")
-                message = issue.get("message", "")
-                key = f"high_{category}_{i}"
-                top_issues[key] = message
-            
-            # Fill with medium priority if needed
-            if len(top_issues) < 3:
-                for i, issue in enumerate(medium_priority[:3 - len(top_issues)]):
-                    category = issue.get("category", "General")
-                    message = issue.get("message", "")
-                    key = f"medium_{category}_{i}"
-                    top_issues[key] = message
-        
-        return top_issues
-
-
-# Example usage
-if __name__ == "__main__":
-    # Sample code for testing
-    sample_code = """
-    def factorial(n):
-        # Recursive factorial function
-        if n <= 0:
-            return 1
-        else:
-            return n * factorial(n-1)
-    
-    def process_data(file_path):
-        # Process data from a file
-        data = open(file_path).readlines()
-        result = ""
-        for line in data:
-            result = result + line
-        return result
-    """
-    
-    # Sample analysis results
-    sample_analysis = {
-        "language": "python",
-        "summary": {
-            "maintainability": {
-                "index": 65.5,
-                "rating": "Good"
-            },
-            "security": "Medium Risk",
-            "performance": "Needs Improvement"
-        },
-        "suggestions": [
-            {
-                "category": "Security",
-                "message": "File is opened without proper error handling or context manager",
-                "priority": "high"
-            },
-            {
-                "category": "Performance",
-                "message": "Inefficient string concatenation in loop",
-                "priority": "medium"
-            },
-            {
-                "category": "Performance",
-                "message": "Recursive function without memoization",
-                "priority": "low"
-            }
-        ]
-    }
-    
-    # Initialize enhancer
-    enhancer = CognitoLLMEnhancer()
-    
-    # Enhance analysis
-    enhanced_results = enhancer.enhance_analysis(sample_code, sample_analysis)
-    
-    # Print enhanced results
-    import json
-    print(json.dumps(enhanced_results, indent=2))
+        try:
+            return self.agent.run(user_input)
+        except Exception as e:
+            logger.error(f"Error in chat: {e}")
+            return f"Could not process chat: {str(e)}"
