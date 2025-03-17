@@ -8,19 +8,19 @@
 - **Providing AI-powered insights**
 
 ## Key Features
-1. **Code Readability Analysis**
+* **Code Readability Analysis**
    - Checks for naming conventions, comments, and code structure.
    - Suggests refactoring for clearer and more maintainable code.
-2. **Security Vulnerability Detection**
+* **Security Vulnerability Detection**
    - Detects common security issues and flags vulnerabilities according to OWASP standards.
    - Highlights risky functions and suggests safer alternatives.
-3. **Performance Analysis**
+* **Performance Analysis**
    - Analyzes algorithmic complexity and memory usage.
    - Flags inefficient patterns and recommends optimizations.
-4. **Interactive Suggestions**
+* **Interactive Suggestions**
    - Provides one suggestion at a time, allowing users to review, accept, or dismiss.
    - Offers optional explanations for each suggestion if requested.
-5. **AI-Powered Analysis**
+* **AI-Powered Analysis**
    - Uses LLM technology to provide natural language explanations of code
    - Enhances suggestions with AI-driven insights and alternatives
    - Identifies semantic patterns that rule-based analysis might miss
