@@ -1,12 +1,13 @@
 """
-Enhanced main module for Cognito with code correction functionality.
+Enhanced main module for Cognito with code correction functionality and LLM integration.
 
-This is an improved version of the main.py that adds code correction features.
+This is an improved version of the main.py that adds code correction features and LLM capabilities.
 """
 
 import os
 import sys
 import logging
+import argparse
 from colorama import init, Fore, Style
 from pathlib import Path
 
@@ -28,9 +29,11 @@ try:
     from analyzers.performance_analyzer import analyze_complexity, analyze_memory_usage
     from analyzers.security_analyzer import analyze_security, generate_security_suggestion
     from language_detector import detect_code_language
+    from analyzer import analyze_code
     
-    # Import the new code corrector
+    # Import the code corrector
     from code_correction import CodeCorrector
+    from code_correction import extract_issues_from_feedback
 except ImportError as e:
     logger.error(f"Error importing modules: {e}")
     print(f"{Fore.RED}Error: Could not import required modules. Make sure you're running from the project root.{Style.RESET_ALL}")
@@ -156,74 +159,6 @@ def highlight_code_with_issues(code, issues):
     
     return '\n'.join(result)
 
-def extract_issues_from_feedback(feedback_items):
-    """Extract issues from feedback items to use for code correction."""
-    issues = []
-    
-    # Process readability issues
-    if 'readability' in feedback_items:
-        readability = feedback_items['readability']
-        if isinstance(readability, str) and 'consider improving' in readability.lower():
-            parts = readability.split(': ', 1)
-            if len(parts) > 1:
-                issues.append({
-                    'type': 'readability',
-                    'message': parts[1],
-                    'line': 0  # Generic issue, not line-specific
-                })
-    
-    # Process performance issues
-    if 'performance' in feedback_items:
-        performance = feedback_items['performance']
-        if isinstance(performance, list):
-            for item in performance:
-                if 'nested loops' in item.lower():
-                    # Try to find the line with nested loops
-                    issues.append({
-                        'type': 'performance',
-                        'message': item,
-                        'line': find_line_with_pattern(feedback_items.get('code', ''), r'for\s+.+\s+in.+:.*\n\s+for')
-                    })
-                elif 'recursive' in item.lower():
-                    issues.append({
-                        'type': 'performance',
-                        'message': item,
-                        'line': find_line_with_pattern(feedback_items.get('code', ''), r'def\s+\w+[^)]*\):[^:]+\w+\(')
-                    })
-        elif isinstance(performance, str) and 'looks good' not in performance.lower():
-            issues.append({
-                'type': 'performance',
-                'message': performance,
-                'line': 0
-            })
-    
-    # Process security issues
-    if 'security' in feedback_items:
-        security = feedback_items['security']
-        if isinstance(security, list):
-            for item in security:
-                # Try to identify the specific function and its line
-                func_name = None
-                if 'eval' in item.lower():
-                    func_name = 'eval'
-                elif 'open' in item.lower():
-                    func_name = 'open'
-                
-                issues.append({
-                    'type': 'security',
-                    'message': item,
-                    'func_name': func_name,
-                    'line': find_line_with_pattern(feedback_items.get('code', ''), fr'{func_name}\s*\(') if func_name else 0
-                })
-        elif isinstance(security, str) and 'no' not in security.lower():
-            issues.append({
-                'type': 'security',
-                'message': security,
-                'line': 0
-            })
-    
-    return issues
-
 def find_line_with_pattern(code, pattern):
     """Find the line number containing a regex pattern."""
     import re
@@ -243,7 +178,57 @@ def find_line_with_pattern(code, pattern):
 
 def main():
     """Main application entry point."""
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Cognito - AI-powered code review assistant")
+    parser.add_argument("--file", help="Path to code file to analyze")
+    parser.add_argument("--language", help="Force language detection (python, c)")
+    parser.add_argument("--output", help="Output file for analysis results")
+    parser.add_argument("--use-llm", action="store_true", help="Use LLM to enhance analysis")
+    args = parser.parse_args()
+    
     try:
+        # If direct file input is provided, analyze it
+        if args.file:
+            try:
+                with open(args.file, 'r') as file:
+                    code_input = file.read()
+                    filename = os.path.basename(args.file)
+                    
+                    # Detect or force language
+                    language = args.language or detect_language(code_input)
+                    
+                    # Analyze code
+                    print(f"Analyzing {filename} as {language}...")
+                    analysis_results = analyze_code(code_input, filename, language, use_llm=args.use_llm)
+                    
+                    # Print summary
+                    print("\nAnalysis Summary:")
+                    for key, value in analysis_results.get('summary', {}).items():
+                        print(f"- {key}: {value}")
+                    
+                    # Print suggestions
+                    print("\nSuggestions:")
+                    for suggestion in analysis_results.get('suggestions', []):
+                        category = suggestion.get('category', '')
+                        message = suggestion.get('message', '')
+                        priority = suggestion.get('priority', '')
+                        print(f"[{priority.upper()}] {category}: {message}")
+                    
+                    # If LLM was used, print those insights
+                    if args.use_llm and 'code_explanation' in analysis_results:
+                        print("\nCode Explanation:")
+                        print(analysis_results['code_explanation'])
+                        
+                    # Save results if output file is specified
+                    if args.output:
+                        save_feedback(code_input, str(analysis_results), None, args.output)
+                        
+                    return
+            except Exception as e:
+                print(f"Error analyzing file: {str(e)}")
+                return
+        
+        # Interactive mode
         clear_screen()
         print_logo()
         print_separator()
@@ -292,16 +277,19 @@ def main():
             # Detect language
             language = detect_language(code_input)
             print(f"\n{Fore.CYAN}Detected language: {language}{Style.RESET_ALL}")
-            print(f"{Fore.CYAN}Analyzing code...{Style.RESET_ALL}")
+            print(f"{Fore.CYAN}Analyzing code{' with LLM' if args.use_llm else ''}...{Style.RESET_ALL}")
             
             # Analysis process
             all_feedback = ""
             feedback_items = {'code': code_input}
             
+            # Use unified analyzer
+            analysis_results = analyze_code(code_input, filename, language, use_llm=args.use_llm)
+            
             # Readability Analysis
             print_section_header("Readability Analysis")
             try:
-                readability_feedback = analyze_readability(code_input)
+                readability_feedback = analysis_results['analysis'].get('readability', 'No readability analysis available.')
                 formatted_feedback = format_suggestion(readability_feedback, "readability")
                 print(formatted_feedback)
                 all_feedback += f"Readability Analysis:\n{readability_feedback}\n\n"
@@ -315,11 +303,11 @@ def main():
             # Performance Analysis
             print_section_header("Performance Analysis")
             try:
-                complexity_feedback = analyze_complexity(code_input)
-                formatted_feedback = format_suggestion(complexity_feedback, "performance")
+                performance_feedback = analysis_results['analysis'].get('performance', 'No performance analysis available.')
+                formatted_feedback = format_suggestion(performance_feedback, "performance")
                 print(formatted_feedback)
-                all_feedback += f"Performance Analysis:\n{complexity_feedback}\n\n"
-                feedback_items['performance'] = complexity_feedback
+                all_feedback += f"Performance Analysis:\n{performance_feedback}\n\n"
+                feedback_items['performance'] = performance_feedback
             except Exception as e:
                 error_msg = f"Error in performance analysis: {str(e)}"
                 print(f"{Fore.RED}✗ {error_msg}{Style.RESET_ALL}")
@@ -343,17 +331,29 @@ def main():
             # Security Analysis
             print_section_header("Security Analysis")
             try:
-                security_issues = analyze_security(code_input)
-                security_feedback = generate_security_suggestion(security_issues)
-                formatted_feedback = format_suggestion(security_issues, "security")
+                security_feedback = analysis_results['analysis'].get('security', 'No security analysis available.')
+                formatted_feedback = format_suggestion(security_feedback, "security")
                 print(formatted_feedback)
                 all_feedback += f"Security Analysis:\n{security_feedback}\n\n"
-                feedback_items['security'] = security_issues
+                feedback_items['security'] = security_feedback
             except Exception as e:
                 error_msg = f"Error in security analysis: {str(e)}"
                 print(f"{Fore.RED}✗ {error_msg}{Style.RESET_ALL}")
                 all_feedback += f"Security Analysis:\n{error_msg}\n\n"
                 logger.error(error_msg, exc_info=True)
+            
+            # Display LLM insights if available
+            if args.use_llm:
+                print_section_header("AI-Enhanced Insights")
+                if 'code_explanation' in analysis_results:
+                    print(f"{Fore.GREEN}✓ Code Explanation:{Style.RESET_ALL}")
+                    print(analysis_results['code_explanation'])
+                    all_feedback += f"AI Code Explanation:\n{analysis_results['code_explanation']}\n\n"
+                
+                if 'ai_review' in analysis_results:
+                    print(f"{Fore.GREEN}✓ AI Review:{Style.RESET_ALL}")
+                    print(analysis_results['ai_review'])
+                    all_feedback += f"AI Review:\n{analysis_results['ai_review']}\n\n"
             
             # Extract issues for code correction
             issues = extract_issues_from_feedback(feedback_items)

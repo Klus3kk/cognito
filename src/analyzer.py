@@ -10,6 +10,7 @@ from analyzers.c_analyzer import analyze_c_code
 from analyzers.readability_analyzer import analyze_readability
 from analyzers.performance_analyzer import analyze_complexity, analyze_memory_usage
 from analyzers.security_analyzer import analyze_security, generate_security_suggestion
+from llm.integration import LLMIntegration
 
 class CodeAnalyzer:
     """Main class for unified code analysis across languages."""
@@ -18,7 +19,7 @@ class CodeAnalyzer:
         """Initialize the code analyzer."""
         pass
     
-    def analyze(self, code, filename=None, language=None):
+    def analyze(self, code, filename=None, language=None, use_llm=False):
         """
         Analyze code and generate comprehensive feedback.
         
@@ -26,6 +27,7 @@ class CodeAnalyzer:
             code (str): Code snippet to analyze
             filename (str, optional): Original filename, if available
             language (str, optional): Force a specific language for analysis
+            use_llm (bool): Whether to enhance results with LLM capabilities
         
         Returns:
             dict: Analysis results with language-specific insights
@@ -62,6 +64,15 @@ class CodeAnalyzer:
         
         # Generate suggestions from analysis
         results['suggestions'] = self._generate_suggestions(results)
+        
+        # Enhance with LLM if requested
+        if use_llm:
+            try:
+                llm_integration = LLMIntegration()
+                results = llm_integration.enhance_analysis(code, results)
+            except Exception as e:
+                # Ensure analysis works even if LLM enhancement fails
+                results["llm_error"] = str(e)
         
         return results
     
@@ -204,7 +215,7 @@ class CodeAnalyzer:
         return suggestions
 
 
-def analyze_code(code, filename=None, language=None):
+def analyze_code(code, filename=None, language=None, use_llm=False):
     """
     Convenient function to analyze code.
     
@@ -212,9 +223,10 @@ def analyze_code(code, filename=None, language=None):
         code (str): Code to analyze
         filename (str, optional): Original filename, if available
         language (str, optional): Force a specific language for analysis
+        use_llm (bool): Whether to enhance results with LLM capabilities
     
     Returns:
         dict: Analysis results
     """
     analyzer = CodeAnalyzer()
-    return analyzer.analyze(code, filename, language)
+    return analyzer.analyze(code, filename, language, use_llm=use_llm)

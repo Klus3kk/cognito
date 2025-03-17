@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  cognito:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cognito:latest
+    container_name: cognito
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    environment:
+      - COGNITO_ENV=development
+      - HUGGINGFACE_TOKEN=${HUGGINGFACE_TOKEN}
+    ports:
+      - "8000:8000"
+    command: python -m src.main
