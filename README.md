@@ -1,7 +1,7 @@
 # Cognito
 
 ## Overview
-**Cognito** is an interactive AI assistant that provides code review insights one suggestion at a time. It initially supports Python and C, with plans to add more languages. By leveraging ML/NLP and LLM technologies, **Cognito** aims to enhance code quality by:
+**Cognito** is an interactive AI assistant that provides code review insights one suggestion at a time. It initially supports Python and C, with plans to add more languages. By leveraging ML/NLP and LLM technologies, this project aims to enhance code quality by:
 - **Improving readability**
 - **Ensuring security** (aligned with OWASP guidelines)
 - **Optimizing code performance**
