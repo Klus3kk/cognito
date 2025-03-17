@@ -1,6 +1,3 @@
-Here's how we can update the README to include the new functionality:
-
-```markdown
 # Cognito
 
 ## Overview
