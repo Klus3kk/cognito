@@ -1,10 +1,41 @@
 {
-  "suggestions": [],
+  "suggestions": [
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: Code passes basic OWASP security checks.",
+        "priority": "high"
+      },
+      "accepted": true,
+      "timestamp": "2025-03-17T21:52:52.086225",
+      "user_comment": "Really great tip, love it!"
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Only 0.0% of functions have docstrings. Consider adding more.",
+        "priority": "medium"
+      },
+      "accepted": false,
+      "timestamp": "2025-03-17T21:53:06.618120",
+      "user_comment": "It doesnt work :c"
+    },
+    {
+      "suggestion": {
+        "category": "Readability",
+        "message": "Consider improving readability: Rename variables, simplify functions, or add comments.",
+        "priority": "low"
+      },
+      "accepted": false,
+      "timestamp": "2025-03-17T21:53:23.896025",
+      "user_comment": "I don't think that my code is wrongly written!"
+    }
+  ],
   "metrics": {
-    "total_suggestions": 0,
-    "accepted_suggestions": 0,
-    "rejected_suggestions": 0,
-    "acceptance_rate": 0.0
+    "total_suggestions": 3,
+    "accepted_suggestions": 1,
+    "rejected_suggestions": 2,
+    "acceptance_rate": 33.33
   },
-  "last_updated": "2025-03-17T21:29:43.829527"
+  "last_updated": "2025-03-17T21:53:23.896080"
 }

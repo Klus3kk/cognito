@@ -19,7 +19,7 @@ class CodeAnalyzer:
         """Initialize the code analyzer."""
         pass
     
-    def analyze(self, code, filename=None, language=None, use_llm=False):
+    def analyze(self, code, filename=None, language=None, use_llm=False, llm_integration=None):
         """
         Analyze code and generate comprehensive feedback.
         
@@ -28,6 +28,7 @@ class CodeAnalyzer:
             filename (str, optional): Original filename, if available
             language (str, optional): Force a specific language for analysis
             use_llm (bool): Whether to enhance results with LLM capabilities
+            llm_integration: Custom LLM integration to use (optional)
         
         Returns:
             dict: Analysis results with language-specific insights
@@ -68,8 +69,14 @@ class CodeAnalyzer:
         # Enhance with LLM if requested
         if use_llm:
             try:
-                llm_integration = LLMIntegration()
-                results = llm_integration.enhance_analysis(code, results)
+                # Use custom LLM integration if provided
+                if llm_integration:
+                    results = llm_integration.enhance_analysis(code, results)
+                else:
+                    # Use default LLM integration
+                    from llm.integration import LLMIntegration
+                    llm_integration = LLMIntegration()
+                    results = llm_integration.enhance_analysis(code, results)
             except Exception as e:
                 # Ensure analysis works even if LLM enhancement fails
                 results["llm_error"] = str(e)
@@ -215,7 +222,7 @@ class CodeAnalyzer:
         return suggestions
 
 
-def analyze_code(code, filename=None, language=None, use_llm=False):
+def analyze_code(code, filename=None, language=None, use_llm=False, llm_integration=None):
     """
     Convenient function to analyze code.
     
@@ -224,9 +231,11 @@ def analyze_code(code, filename=None, language=None, use_llm=False):
         filename (str, optional): Original filename, if available
         language (str, optional): Force a specific language for analysis
         use_llm (bool): Whether to enhance results with LLM capabilities
+        llm_integration: Custom LLM integration to use (optional)
     
     Returns:
         dict: Analysis results
     """
     analyzer = CodeAnalyzer()
-    return analyzer.analyze(code, filename, language, use_llm=use_llm)
+    results = analyzer.analyze(code, filename, language, use_llm=use_llm, llm_integration=llm_integration)
+    return results
