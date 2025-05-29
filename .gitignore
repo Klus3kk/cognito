@@ -3,3 +3,4 @@ __pycache__
 cognito.egg-info
 venv
 .env
+test

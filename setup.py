@@ -7,7 +7,7 @@ def read_requirements():
 
 setup(
     name="cognito",
-    version="0.3.0",
+    version="0.7.1",
     packages=find_packages(where="src"),  
     package_dir={"": "src"},  
     py_modules=["main"],

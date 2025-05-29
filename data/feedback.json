@@ -549,13 +549,73 @@
       "accepted": false,
       "timestamp": "2025-05-29T18:58:14.783027",
       "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: Code passes basic OWASP security checks.",
+        "priority": "high"
+      },
+      "accepted": false,
+      "timestamp": "2025-05-30T00:20:02.989573",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Function '__init__' doesn't follow snake_case naming convention",
+        "priority": "medium"
+      },
+      "accepted": false,
+      "timestamp": "2025-05-30T00:20:04.462892",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Some lines exceed PEP 8 recommended length of 79 characters (max: 86)",
+        "priority": "medium"
+      },
+      "accepted": false,
+      "timestamp": "2025-05-30T00:20:05.304903",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: The following issues were found:\n- Potential security issue: open - Ensure proper file handling and permissions checking.\n\nRecommendation: Review OWASP Top 10 guidelines for secure coding practices.",
+        "priority": "high"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-30T00:21:19.777702",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Only 0.0% of functions have docstrings. Consider adding more.",
+        "priority": "medium"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-30T00:21:21.318860",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Readability",
+        "message": "Consider improving readability: Low comment ratio, consider adding more documentation",
+        "priority": "low"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-30T00:21:22.117912",
+      "user_comment": null
     }
   ],
   "metrics": {
-    "total_suggestions": 55,
-    "accepted_suggestions": 27,
-    "rejected_suggestions": 28,
-    "acceptance_rate": 49.09
+    "total_suggestions": 61,
+    "accepted_suggestions": 30,
+    "rejected_suggestions": 31,
+    "acceptance_rate": 49.18
   },
-  "last_updated": "2025-05-29T18:58:14.783091"
+  "last_updated": "2025-05-30T00:21:22.117980"
 }
