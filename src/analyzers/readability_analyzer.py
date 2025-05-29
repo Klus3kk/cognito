@@ -114,13 +114,38 @@ def fallback_readability_analysis(code_snippet):
     total_lines = len(code_snippet.split('\n'))
     comment_ratio = comment_lines / max(total_lines, 1)
     
-    # Check indentation consistency
-    indentation_levels = set()
+    # FIXED: Better indentation consistency check
+    indentation_levels = []
+    lines_with_content = []
+    
     for line in code_snippet.split('\n'):
-        if line.strip():
+        if line.strip():  # Only check non-empty lines
             leading_spaces = len(line) - len(line.lstrip())
-            if leading_spaces > 0:
-                indentation_levels.add(leading_spaces)
+            if leading_spaces > 0:  # Only count indented lines
+                indentation_levels.append(leading_spaces)
+                lines_with_content.append(line)
+    
+    # Check for mixed tabs and spaces (real inconsistency)
+    has_mixed_whitespace = False
+    for line in lines_with_content:
+        leading_whitespace = line[:len(line) - len(line.lstrip())]
+        if '\t' in leading_whitespace and ' ' in leading_whitespace:
+            has_mixed_whitespace = True
+            break
+    
+    # Check if indentation levels follow a reasonable pattern
+    is_inconsistent_indentation = False
+    if indentation_levels:
+        unique_levels = sorted(set(indentation_levels))
+        
+        # Only flag if we have more than 3 different indentation levels
+        # and they don't follow a consistent pattern (multiples of 2 or 4)
+        if len(unique_levels) > 3:
+            # Check for 4-space pattern (most common in Python)
+            if not all(level % 4 == 0 for level in unique_levels):
+                # Check for 2-space pattern
+                if not all(level % 2 == 0 for level in unique_levels):
+                    is_inconsistent_indentation = True
     
     # Generate feedback
     issues = []
@@ -131,8 +156,11 @@ def fallback_readability_analysis(code_snippet):
     if comment_ratio < 0.1 and total_lines > 20:
         issues.append("Low comment ratio, consider adding more documentation")
     
-    if len(indentation_levels) > 2:
-        issues.append("Inconsistent indentation detected")
+    # FIXED: Only flag real indentation issues
+    if has_mixed_whitespace:
+        issues.append("Mixed tabs and spaces detected - use consistent whitespace")
+    elif is_inconsistent_indentation:
+        issues.append("Inconsistent indentation pattern detected")
     
     if not issues:
         return "Code readability looks good."

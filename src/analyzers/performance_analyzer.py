@@ -150,14 +150,106 @@ def analyze_complexity(code_snippet):
 
 
 def analyze_memory_usage(code_snippet):
-    """Analyze memory usage (original function, unchanged)"""
-    exec_globals = {}
-    memory_before = memory_profiler.memory_usage()[0]
-
+    """
+    Analyze memory usage patterns through static code analysis.
+    
+    Args:
+        code_snippet (str): Python code to analyze
+        
+    Returns:
+        str: Memory usage analysis and suggestions
+    """
+    import ast
+    import re
+    
     try:
-        exec(code_snippet, exec_globals)
-        memory_after = memory_profiler.memory_usage()[0]
-        memory_used = memory_after - memory_before
-        return f"Memory usage: {memory_used:.2f} MB"
+        # Parse the code into AST
+        tree = ast.parse(code_snippet)
+        
+        # Simple pattern detection
+        memory_issues = []
+        
+        # 1. Large data structures
+        large_lists = len(re.findall(r'\[[^\]]{30,}\]', code_snippet))
+        large_dicts = len(re.findall(r'\{[^}]{30,}\}', code_snippet))
+        
+        if large_lists + large_dicts > 1:
+            memory_issues.append("large data structures detected")
+        
+        # 2. String concatenation in loops
+        lines = code_snippet.split('\n')
+        concat_in_loop = False
+        for i, line in enumerate(lines):
+            if 'for ' in line and i + 1 < len(lines):
+                next_lines = lines[i+1:i+4]  # Check next few lines
+                for next_line in next_lines:
+                    if '= ' in next_line and ' + ' in next_line and ('str(' in next_line or '"' in next_line or "'" in next_line):
+                        concat_in_loop = True
+                        break
+        
+        if concat_in_loop:
+            memory_issues.append("string concatenation in loop - use join() instead")
+        
+        # 3. Nested loops (O(n²) or higher complexity)
+        nested_loops = 0
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.For, ast.While)):
+                # Check if this loop contains another loop
+                for child in ast.walk(node):
+                    if child != node and isinstance(child, (ast.For, ast.While)):
+                        nested_loops += 1
+                        break
+        
+        if nested_loops > 0:
+            memory_issues.append("nested loops may create large temporary data")
+        
+        # 4. Recursive functions
+        functions = []
+        recursive_funcs = 0
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                functions.append(node.name)
+        
+        for func_name in functions:
+            if func_name in code_snippet.count(f'{func_name}(') > 1:  # Simple heuristic
+                recursive_funcs += 1
+        
+        if recursive_funcs > 0:
+            memory_issues.append("recursive functions may cause stack overflow")
+        
+        # 5. Check for efficient patterns
+        efficient_patterns = []
+        if 'yield ' in code_snippet:
+            efficient_patterns.append("uses memory-efficient generators")
+        if '[' in code_snippet and 'for ' in code_snippet and ' in ' in code_snippet:
+            if code_snippet.count('[') < code_snippet.count('for'):  # List comprehension heuristic
+                efficient_patterns.append("uses efficient list comprehensions")
+        
+        # Estimate memory complexity
+        lines_count = len(code_snippet.split('\n'))
+        if nested_loops > 0 or large_lists + large_dicts > 2:
+            complexity = "High complexity"
+        elif lines_count > 50 or len(memory_issues) > 1:
+            complexity = "Medium complexity"
+        else:
+            complexity = "Low complexity"
+        
+        # Format result
+        if memory_issues:
+            issue_str = '; '.join(memory_issues[:2])  # Show top 2 issues
+            return f"Memory usage: {complexity} - {issue_str}"
+        elif efficient_patterns:
+            pattern_str = ', '.join(efficient_patterns)
+            return f"Memory usage: {complexity} - {pattern_str}"
+        else:
+            return f"Memory usage: {complexity} - no major concerns detected"
+            
     except Exception as e:
-        return f"Error analyzing memory: {str(e)}"
+        # Fallback to simple line count estimation
+        lines = len(code_snippet.split('\n'))
+        if lines > 100:
+            return "Memory usage: High complexity - large codebase"
+        elif lines > 50:
+            return "Memory usage: Medium complexity - moderate size"
+        else:
+            return "Memory usage: Low complexity - small codebase"

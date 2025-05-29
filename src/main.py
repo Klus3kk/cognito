@@ -94,20 +94,61 @@ def print_section_header(title):
     print(f"{Fore.YELLOW}{'-'*50}{Style.RESET_ALL}")
 
 def format_suggestion(suggestion, category):
-    """Format a suggestion with appropriate color based on category."""
+    """Format a suggestion with appropriate color based on category and content."""
     if isinstance(suggestion, list):
         result = ""
         for item in suggestion:
-            if "good" in item.lower() or "no issues" in item.lower():
+            if is_positive_message(item):
                 result += f"{Fore.GREEN}✓ {item}{Style.RESET_ALL}\n"
             else:
                 result += f"{Fore.RED}✗ {item}{Style.RESET_ALL}\n"
         return result.strip()
     else:
-        if "good" in suggestion.lower() or "no issues" in suggestion.lower():
+        if is_positive_message(suggestion):
             return f"{Fore.GREEN}✓ {suggestion}{Style.RESET_ALL}"
         else:
             return f"{Fore.RED}✗ {suggestion}{Style.RESET_ALL}"
+
+def is_positive_message(message):
+    """
+    Determine if a message represents a positive/good result.
+    
+    Args:
+        message (str): The message to check
+        
+    Returns:
+        bool: True if message is positive, False if it indicates an issue
+    """
+    if not isinstance(message, str):
+        return False
+    
+    message_lower = message.lower()
+    
+    # Positive indicators - these should show as green ✓
+    positive_patterns = [
+        "looks good",
+        "no issues detected", 
+        "no problems found",
+        "passes",
+        "security analysis: code passes",
+        "owasp security checks",
+        "code complexity looks good",
+        "no style issues detected",
+        "no common anti-patterns detected",
+        "no common security issues detected",
+        "code readability looks good"
+    ]
+    
+    # Check if message contains positive indicators
+    for pattern in positive_patterns:
+        if pattern in message_lower:
+            return True
+    
+    # Special case for security messages that mention "passes"
+    if "security analysis:" in message_lower and "passes" in message_lower:
+        return True
+    
+    return False
 
 def detect_language(code):
     """Attempt to detect the programming language of the code."""
