@@ -29,13 +29,123 @@
       "accepted": false,
       "timestamp": "2025-03-17T21:53:23.896025",
       "user_comment": "I don't think that my code is wrongly written!"
+    },
+    {
+      "suggestion": {
+        "category": "Code Correction",
+        "message": "Automatic code correction",
+        "priority": "medium"
+      },
+      "accepted": false,
+      "timestamp": "2025-05-29T01:42:46.113298",
+      "user_comment": "idk"
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: Code passes basic OWASP security checks.",
+        "priority": "high"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-29T01:42:58.845838",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Only 0.0% of functions have docstrings. Consider adding more.",
+        "priority": "medium"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-29T01:43:05.292219",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Readability",
+        "message": "Consider improving readability: Inconsistent indentation detected",
+        "priority": "low"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-29T01:43:09.541708",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Code Correction",
+        "message": "Automatic code correction",
+        "priority": "medium"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-29T01:49:54.230674",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: Code passes basic OWASP security checks.",
+        "priority": "high"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-29T01:49:59.312244",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Only 0.0% of functions have docstrings. Consider adding more.",
+        "priority": "medium"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-29T01:50:04.914435",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Performance",
+        "message": "Code contains deeply nested loops. Consider refactoring to reduce time complexity.",
+        "priority": "medium"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-29T01:50:08.906160",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: Code passes basic OWASP security checks.",
+        "priority": "high"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-29T01:56:52.026906",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Function '__init__' doesn't follow snake_case naming convention",
+        "priority": "medium"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-29T01:56:55.972733",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Some lines exceed PEP 8 recommended length of 79 characters (max: 86)",
+        "priority": "medium"
+      },
+      "accepted": true,
+      "timestamp": "2025-05-29T01:56:58.324768",
+      "user_comment": null
     }
   ],
   "metrics": {
-    "total_suggestions": 3,
-    "accepted_suggestions": 1,
-    "rejected_suggestions": 2,
-    "acceptance_rate": 33.33
+    "total_suggestions": 14,
+    "accepted_suggestions": 11,
+    "rejected_suggestions": 3,
+    "acceptance_rate": 78.57
   },
-  "last_updated": "2025-03-17T21:53:23.896080"
+  "last_updated": "2025-05-29T01:56:58.324804"
 }
