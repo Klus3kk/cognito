@@ -1,8 +1,5 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import torch 
 import warnings
 import os
-from huggingface_hub import login
 import logging
 
 # Configure logging
@@ -14,52 +11,34 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torch")
 
 # Global variables to track model status
 MODEL_LOADED = False
-tokenizer = None
-model = None
+ml_model = None
 
-# Try to authenticate with Hugging Face
-try:
-    # Check if token is in environment variables
-    token = os.environ.get("HUGGINGFACE_TOKEN")
-    if token:
-        login(token)
-        logger.info("Authenticated with Hugging Face using environment token")
-    else:
-        logger.warning("No Hugging Face token found in environment variables")
-except Exception as e:
-    logger.error(f"Error authenticating with Hugging Face: {e}")
-
-# Model loading with better error handling
-try:
-    # If token is available, try to load models
-    if os.environ.get("HUGGINGFACE_TOKEN"):
-        # Load tokenizer with authentication options
-        tokenizer = AutoTokenizer.from_pretrained(
-            "microsoft/codebert-base", 
-            use_auth_token=os.environ.get("HUGGINGFACE_TOKEN")
-        )
+def load_ml_readability_model():
+    """Load the trained ML readability model."""
+    global MODEL_LOADED, ml_model
+    
+    try:
+        # Import the trainer class
+        import sys
+        sys.path.append('src/models')
+        from fine_tune_readability import ReadabilityModelTrainer
         
-        # Load model with the same options
-        model = AutoModelForSequenceClassification.from_pretrained(
-            "microsoft/codebert-base", 
-            use_auth_token=os.environ.get("HUGGINGFACE_TOKEN"),
-            num_labels=2
-        )
-        
-        MODEL_LOADED = True
-        logger.info("Successfully loaded CodeBERT model and tokenizer")
-    else:
-        # No token, don't try to load model
-        logger.info("Skipping CodeBERT model loading due to missing token")
-        MODEL_LOADED = False
-        
-except Exception as e:
-    logger.error(f"Error loading CodeBERT model: {e}")
-    MODEL_LOADED = False
+        ml_model = ReadabilityModelTrainer()
+        if ml_model.load_model():
+            MODEL_LOADED = True
+            logger.info("Successfully loaded ML readability model")
+            return True
+        else:
+            logger.warning("Failed to load ML readability model")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error loading ML readability model: {e}")
+        return False
 
 def analyze_readability(code_snippet):
     """
-    Analyze code readability using CodeBERT if available, or fallback to basic analysis.
+    Analyze code readability using ML model if available, or fallback to basic analysis.
     
     Args:
         code_snippet (str): Code to analyze
@@ -67,27 +46,29 @@ def analyze_readability(code_snippet):
     Returns:
         str: Readability analysis feedback
     """
-    if MODEL_LOADED and tokenizer is not None and model is not None:
+    global MODEL_LOADED, ml_model
+    
+    # Try to use ML model first
+    if not MODEL_LOADED:
+        load_ml_readability_model()
+    
+    if MODEL_LOADED and ml_model is not None:
         try:
             # Use the ML model for analysis
-            inputs = tokenizer(code_snippet, return_tensors="pt", truncation=True, padding=True)
-            outputs = model(**inputs)
-            logits = outputs.logits
-            predicted_class = torch.argmax(logits, dim=1).item()
+            score, explanation = ml_model.predict_readability(code_snippet)
             
-            if predicted_class == 0:
-                return "Consider improving readability: Rename variables, simplify functions, or add comments."
+            if score is not None:
+                return explanation
             else:
-                return "Code readability looks good."
+                logger.warning("ML model returned None, falling back to heuristics")
                 
         except Exception as e:
-            logger.error(f"Error during model inference: {e}")
+            logger.error(f"Error during ML model inference: {e}")
             # Fall back to basic analysis if model inference fails
-            return fallback_readability_analysis(code_snippet)
-    else:
-        # Use fallback function when model isn't loaded
-        logger.info("Using fallback readability analysis (ML model not available)")
-        return fallback_readability_analysis(code_snippet)
+    
+    # Use fallback function when model isn't available
+    logger.info("Using fallback readability analysis (ML model not available)")
+    return fallback_readability_analysis(code_snippet)
 
 def fallback_readability_analysis(code_snippet):
     """
@@ -162,7 +143,50 @@ def fallback_readability_analysis(code_snippet):
     elif is_inconsistent_indentation:
         issues.append("Inconsistent indentation pattern detected")
     
+    # Check for documentation
+    if '"""' in code_snippet or "'''" in code_snippet:
+        issues = [issue for issue in issues if issue]  # Keep other issues but note good docs
+        if not issues:
+            return "Code readability looks good."
+    
+    # Check for good naming
+    import re
+    good_names = len(re.findall(r'def\s+[a-z][a-z0-9_]*\s*\(', code_snippet))
+    poor_names = len(re.findall(r'def\s+[a-zA-Z]\s*\(', code_snippet)) - good_names
+    
+    if poor_names > good_names:
+        issues.append("Consider using more descriptive function names")
+    
     if not issues:
         return "Code readability looks good."
     else:
         return "Consider improving readability: " + "; ".join(issues)
+
+# Maintain backwards compatibility
+def analyze_readability_detailed(code_snippet):
+    """
+    Detailed readability analysis (for backwards compatibility).
+    
+    Args:
+        code_snippet (str): Code to analyze
+        
+    Returns:
+        dict: Detailed analysis results
+    """
+    result = analyze_readability(code_snippet)
+    
+    # Determine score based on result
+    if "looks good" in result.lower():
+        score = 4
+    elif "excellent" in result.lower():
+        score = 5
+    elif "poor" in result.lower() or "improve" in result.lower():
+        score = 2
+    else:
+        score = 3
+    
+    return {
+        'score': score,
+        'feedback': result,
+        'model_used': 'ML' if MODEL_LOADED else 'heuristic'
+    }

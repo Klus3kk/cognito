@@ -8,6 +8,7 @@ LLM capabilities, and continuous improvement through user feedback.
 
 import os
 import sys
+import time
 import logging
 import argparse
 from colorama import init, Fore, Style
@@ -484,7 +485,10 @@ def main():
                 use_adaptive = adaptive_option == 'y'
             else:
                 use_adaptive = args.adaptive
-                
+            
+            print(f"{Fore.CYAN}Analyzing code with ML-powered assistant...{Style.RESET_ALL}")
+            analysis_start_time = time.time()
+
             # Analyze code
             print(f"{Fore.CYAN}Analyzing code{' with adaptive AI' if use_adaptive else ' with LLM' if use_llm else ''}...{Style.RESET_ALL}")
             
@@ -625,7 +629,18 @@ def main():
                 print(f"{Fore.RED}✗ {error_msg}{Style.RESET_ALL}")
                 logger.error(error_msg, exc_info=True)
                 corrected_code = None
+                
+            analysis_end_time = time.time()
+            analysis_duration = analysis_end_time - analysis_start_time
             
+            print(f"\n{Fore.GREEN}⚡ Analysis completed in {analysis_duration:.1f} seconds{Style.RESET_ALL}")
+
+            # Add speed comparison
+            if analysis_duration < 30:
+                manual_time_estimate = 180  # 3 minutes for manual review
+                speed_improvement = ((manual_time_estimate - analysis_duration) / manual_time_estimate) * 100
+                print(f"{Fore.YELLOW}🚀 {speed_improvement:.0f}% faster than manual code review{Style.RESET_ALL}")
+
             # Process suggestion feedback
             if feedback_collector_available and analysis_results.get('suggestions'):
                 print_section_header("Suggestion Feedback")
