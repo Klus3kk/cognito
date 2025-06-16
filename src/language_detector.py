@@ -224,17 +224,29 @@ class LanguageDetector:
         # If multiple languages have the same score, choose based on specific indicators
         if len(detected_langs) > 1:
             detected_langs = self._resolve_language_conflicts(code, detected_langs)
-        
-        # Calculate confidence (normalize to 0-100%)
-        total_scores = sum(scores.values())
-        confidence = (max_score / total_scores * 100) if total_scores > 0 else 0
+    
         
         # Default to most likely if scores are very low
         detected_lang = detected_langs[0] if detected_langs else 'unknown'
         
+        # Calculate confidence (normalize to 0-100%)
+        total_scores = sum(scores.values())
+        if total_scores > 0:
+            confidence = (max_score / total_scores * 100)
+        else:
+            confidence = 0
+            
+        # Ensure confidence makes sense
+        if max_score == 0:
+            confidence = 0
+        elif len([s for s in scores.values() if s > 0]) == 1:
+            confidence = min(95, confidence)  # Cap single match confidence
+        else:
+            confidence = min(100, confidence)
+        
         return {
             'language': detected_lang,
-            'confidence': min(round(confidence, 1), 100.0),
+            'confidence': round(confidence, 1),
             'scores': scores,
             'alternatives': [lang for lang, score in sorted(scores.items(), key=lambda x: x[1], reverse=True)[1:4]]
         }

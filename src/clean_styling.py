@@ -202,14 +202,18 @@ class CleanStyler:
     
     @classmethod
     def print_progress(cls, current, total, description="Processing"):
-        """Print a progress indicator."""
-        percentage = (current / total) * 100 if total > 0 else 0
+        """Print a progress indicator - FIXED for edge cases."""
+        if total <= 0:
+            total = 1  # Prevent division by zero
+        
+        percentage = min(100, (current / total) * 100)  # Cap at 100%
         filled = int(percentage // 4)  # 25 chars max
+        filled = min(25, max(0, filled))  # Ensure bounds
         bar = f"{'█' * filled}{'░' * (25 - filled)}"
         
         print(f"\r{cls.COLORS['info']}{cls.SYMBOLS['arrow_right']} {description}: {cls.COLORS['reset']}"
-              f"[{cls.COLORS['primary']}{bar}{cls.COLORS['reset']}] "
-              f"{percentage:.1f}% ({current}/{total})", end='', flush=True)
+            f"[{cls.COLORS['primary']}{bar}{cls.COLORS['reset']}] "
+            f"{percentage:.1f}% ({current}/{total})", end='', flush=True)
     
     @classmethod
     def print_completion_stats(cls, stats):
@@ -326,7 +330,7 @@ def format_suggestion(suggestion, category='general'):
 
 
 def print_analysis_results(results, title="Analysis Results"):
-    """Print comprehensive analysis results with clean formatting."""
+    """Print comprehensive analysis results with clean formatting - FIXED confidence display."""
     styler = CleanStyler()
     
     styler.print_section_header(title)
@@ -344,11 +348,16 @@ def print_analysis_results(results, title="Analysis Results"):
             formatted = styler.format_suggestion(suggestion)
             print(formatted)
     
-    # Print language info if available
+    # FIXED: Print language info correctly with actual confidence
     if 'language' in results:
         language = results['language']
-        confidence = results.get('confidence', 0)
-        print(f"\n{styler.COLORS['info']}{styler.SYMBOLS['info']} Detected Language: {styler.COLORS['reset']}"
-              f"{language.title()} ({confidence:.1f}% confidence)")
+        # Get confidence from the original detection, not the final results
+        confidence = results.get('detection_confidence', 0)  # Use stored confidence
+        if confidence > 0:
+            print(f"\n{styler.COLORS['info']}{styler.SYMBOLS['info']} Detected Language: {styler.COLORS['reset']}"
+                  f"{language.title()} ({confidence:.1f}% confidence)")
+        else:
+            print(f"\n{styler.COLORS['info']}{styler.SYMBOLS['info']} Language: {styler.COLORS['reset']}"
+                  f"{language.title()}")
     
     return styler

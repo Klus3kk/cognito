@@ -1,37 +1,37 @@
 # Core dependencies
-pytest>=7.4.0
-nltk>=3.8.1
-transformers>=4.30.0
-datasets>=2.14.0
-memory_profiler>=0.61.0
-colorama>=0.4.6
-astroid>=3.0.1
-bandit>=1.7.5
+pytest
+nltk
+transformers
+datasets
+memory_profiler
+colorama
+astroid
+bandit
 
 # ML/AI stack
-torch>=2.0.0
-scikit-learn>=1.3.0
-pandas>=2.1.0
-numpy>=1.24.0
-matplotlib>=3.7.0
-seaborn>=0.12.2
+torch
+scikit-learn
+pandas
+numpy
+matplotlib
+seaborn
 
 # Web framework (for future API)
-fastapi>=0.104.1
-uvicorn>=0.24.0
+fastapi
+uvicorn
 
 # LLM integration
-langchain>=0.1.0
-langchain-community>=0.0.10
-langchain-core>=0.1.0
-langchain-openai>=0.0.8
-openai>=1.10.0
-faiss-cpu>=1.7.4
-tiktoken>=0.4.0
+langchain
+langchain-community
+langchain-core
+langchain-openai
+openai>
+faiss-cpu
+tiktoken
 
 # Utilities
-httpx>=0.25.0
-huggingface-hub>=0.16.0
+httpx
+huggingface-hub
 
 # Documentation
-mkdocs>=1.5.3
+mkdocs
