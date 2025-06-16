@@ -202,14 +202,18 @@ class CleanStyler:
     
     @classmethod
     def print_progress(cls, current, total, description="Processing"):
-        """Print a progress indicator."""
-        percentage = (current / total) * 100 if total > 0 else 0
+        """Print a progress indicator - FIXED for edge cases."""
+        if total <= 0:
+            total = 1  # Prevent division by zero
+        
+        percentage = min(100, (current / total) * 100)  # Cap at 100%
         filled = int(percentage // 4)  # 25 chars max
+        filled = min(25, max(0, filled))  # Ensure bounds
         bar = f"{'█' * filled}{'░' * (25 - filled)}"
         
         print(f"\r{cls.COLORS['info']}{cls.SYMBOLS['arrow_right']} {description}: {cls.COLORS['reset']}"
-              f"[{cls.COLORS['primary']}{bar}{cls.COLORS['reset']}] "
-              f"{percentage:.1f}% ({current}/{total})", end='', flush=True)
+            f"[{cls.COLORS['primary']}{bar}{cls.COLORS['reset']}] "
+            f"{percentage:.1f}% ({current}/{total})", end='', flush=True)
     
     @classmethod
     def print_completion_stats(cls, stats):
