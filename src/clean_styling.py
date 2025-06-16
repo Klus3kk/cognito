@@ -330,7 +330,7 @@ def format_suggestion(suggestion, category='general'):
 
 
 def print_analysis_results(results, title="Analysis Results"):
-    """Print comprehensive analysis results with clean formatting."""
+    """Print comprehensive analysis results with clean formatting - FIXED confidence display."""
     styler = CleanStyler()
     
     styler.print_section_header(title)
@@ -348,11 +348,16 @@ def print_analysis_results(results, title="Analysis Results"):
             formatted = styler.format_suggestion(suggestion)
             print(formatted)
     
-    # Print language info if available
+    # FIXED: Print language info correctly with actual confidence
     if 'language' in results:
         language = results['language']
-        confidence = results.get('confidence', 0)
-        print(f"\n{styler.COLORS['info']}{styler.SYMBOLS['info']} Detected Language: {styler.COLORS['reset']}"
-              f"{language.title()} ({confidence:.1f}% confidence)")
+        # Get confidence from the original detection, not the final results
+        confidence = results.get('detection_confidence', 0)  # Use stored confidence
+        if confidence > 0:
+            print(f"\n{styler.COLORS['info']}{styler.SYMBOLS['info']} Detected Language: {styler.COLORS['reset']}"
+                  f"{language.title()} ({confidence:.1f}% confidence)")
+        else:
+            print(f"\n{styler.COLORS['info']}{styler.SYMBOLS['info']} Language: {styler.COLORS['reset']}"
+                  f"{language.title()}")
     
     return styler

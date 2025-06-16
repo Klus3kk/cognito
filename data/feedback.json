@@ -679,13 +679,93 @@
       "accepted": false,
       "timestamp": "2025-06-17T00:38:08.659374",
       "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: Code passes basic OWASP security checks.",
+        "priority": "high"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:42:27.698966",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Only 0.0% of functions have docstrings. Consider adding more.",
+        "priority": "medium"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:42:28.707681",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Readability",
+        "message": "Good readability (score 4) - well-structured code (confidence: 0.40)",
+        "priority": "low"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:42:29.522957",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: Code passes basic OWASP security checks.",
+        "priority": "high"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:44:33.131551",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Only 0.0% of functions have docstrings. Consider adding more.",
+        "priority": "medium"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:44:33.503419",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: Code passes basic OWASP security checks.",
+        "priority": "high"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:45:05.287475",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Only 0.0% of functions have docstrings. Consider adding more.",
+        "priority": "medium"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:45:05.907677",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Readability",
+        "message": "Good readability (score 4) - well-structured code (confidence: 0.40)",
+        "priority": "low"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:45:06.552477",
+      "user_comment": null
     }
   ],
   "metrics": {
-    "total_suggestions": 68,
+    "total_suggestions": 76,
     "accepted_suggestions": 30,
-    "rejected_suggestions": 38,
-    "acceptance_rate": 44.12
+    "rejected_suggestions": 46,
+    "acceptance_rate": 39.47
   },
-  "last_updated": "2025-06-17T00:38:08.659432"
+  "last_updated": "2025-06-17T00:45:06.552518"
 }
