@@ -759,13 +759,182 @@
       "accepted": false,
       "timestamp": "2025-06-17T00:45:06.552477",
       "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: Code passes basic OWASP security checks.",
+        "priority": "high"
+      },
+      "accepted": true,
+      "timestamp": "2025-06-17T00:47:48.730785",
+      "user_comment": "y"
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Only 0.0% of functions have docstrings. Consider adding more.",
+        "priority": "medium"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:47:49.502012",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Readability",
+        "message": "Moderate readability (score 3) - some improvements possible (confidence: 0.32)",
+        "priority": "low"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:47:50.183470",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Inconsistent spacing around operators detected",
+        "priority": "low"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:48:41.284093",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: Code passes basic OWASP security checks.",
+        "priority": "high"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:49:32.066681",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Only 0.0% of functions have docstrings. Consider adding more.",
+        "priority": "medium"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:49:32.755472",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Readability",
+        "message": "Good readability (score 4) - well-structured code (confidence: 0.40)",
+        "priority": "low"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:49:33.405288",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: Code passes basic OWASP security checks.",
+        "priority": "high"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:49:48.587070",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Only 0.0% of functions have docstrings. Consider adding more.",
+        "priority": "medium"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:49:49.232694",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Readability",
+        "message": "Good readability (score 4) - well-structured code (confidence: 0.40)",
+        "priority": "low"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:49:49.880289",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Overall",
+        "message": "Code analysis looks good for Cpp!",
+        "priority": "info"
+      },
+      "accepted": true,
+      "timestamp": "2025-06-17T00:51:09.727894",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Overall",
+        "message": "Code analysis looks good for Javascript!",
+        "priority": "info"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:51:32.898298",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Overall",
+        "message": "Code analysis looks good for Php!",
+        "priority": "info"
+      },
+      "accepted": true,
+      "timestamp": "2025-06-17T00:51:50.818957",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Use of unsafe function 'gets': Buffer overflow risk. Use fgets instead.",
+        "priority": "high"
+      },
+      "accepted": true,
+      "timestamp": "2025-06-17T00:52:11.678709",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Use of unsafe function 'system': Command injection risk. Avoid or use execve with validated input.",
+        "priority": "high"
+      },
+      "accepted": true,
+      "timestamp": "2025-06-17T00:52:14.065036",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Inconsistent spacing around operators detected",
+        "priority": "low"
+      },
+      "accepted": true,
+      "timestamp": "2025-06-17T00:52:15.387415",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "System",
+        "message": "Analysis completed with limitations: 'CodeAnalyzer' object has no attribute '_generate_suggestions'"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:58:44.559866",
+      "user_comment": null
     }
   ],
   "metrics": {
-    "total_suggestions": 76,
-    "accepted_suggestions": 30,
-    "rejected_suggestions": 46,
-    "acceptance_rate": 39.47
+    "total_suggestions": 93,
+    "accepted_suggestions": 36,
+    "rejected_suggestions": 57,
+    "acceptance_rate": 38.71
   },
-  "last_updated": "2025-06-17T00:45:06.552518"
+  "last_updated": "2025-06-17T00:58:44.559937"
 }

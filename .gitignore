@@ -7,3 +7,5 @@ test
 readability_dataset.csv
 *.pkl
 reports
+test.*
+bad.*
