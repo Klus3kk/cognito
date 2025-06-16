@@ -609,13 +609,63 @@
       "accepted": true,
       "timestamp": "2025-05-30T00:21:22.117912",
       "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: Code passes basic OWASP security checks.",
+        "priority": "high"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:18:58.406162",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Only 0.0% of functions have docstrings. Consider adding more.",
+        "priority": "medium"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:19:00.193017",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Security",
+        "message": "Security Analysis: The following issues were found:\n- Potential security issue: open - Ensure proper file handling and permissions checking.\n- Potential security issue: os.system - Command injection risk. Use subprocess with shell=False instead.\n- Potential security issue: eval - Code injection risk. Consider safer alternatives.\n\nRecommendation: Review OWASP Top 10 guidelines for secure coding practices.",
+        "priority": "high"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:19:16.978307",
+      "user_comment": "n"
+    },
+    {
+      "suggestion": {
+        "category": "Style",
+        "message": "Only 0.0% of functions have docstrings. Consider adding more.",
+        "priority": "medium"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:19:17.908635",
+      "user_comment": null
+    },
+    {
+      "suggestion": {
+        "category": "Readability",
+        "message": "Consider improving readability: Low comment ratio, consider adding more documentation",
+        "priority": "low"
+      },
+      "accepted": false,
+      "timestamp": "2025-06-17T00:19:19.247217",
+      "user_comment": "n"
     }
   ],
   "metrics": {
-    "total_suggestions": 61,
+    "total_suggestions": 66,
     "accepted_suggestions": 30,
-    "rejected_suggestions": 31,
-    "acceptance_rate": 49.18
+    "rejected_suggestions": 36,
+    "acceptance_rate": 45.45
   },
-  "last_updated": "2025-05-30T00:21:22.117980"
+  "last_updated": "2025-06-17T00:19:19.247310"
 }

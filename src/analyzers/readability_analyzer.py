@@ -14,16 +14,24 @@ MODEL_LOADED = False
 ml_model = None
 
 def load_ml_readability_model():
-    """Load the trained ML readability model."""
     global MODEL_LOADED, ml_model
     
     try:
-        # Import the trainer class
         import sys
         sys.path.append('src/models')
         from fine_tune_readability import ReadabilityModelTrainer
         
         ml_model = ReadabilityModelTrainer()
+        
+        # Check if model files exist before loading
+        import os
+        model_path = "src/models/readability_model.pkl"
+        vectorizer_path = "src/models/readability_vectorizer.pkl"
+        
+        if not os.path.exists(model_path) or not os.path.exists(vectorizer_path):
+            logger.info("ML readability model files not found. Run 'python src/data/dataset_loader.py' then 'python src/models/fine_tune_readability.py' to create them.")
+            return False
+            
         if ml_model.load_model():
             MODEL_LOADED = True
             logger.info("Successfully loaded ML readability model")
@@ -33,7 +41,8 @@ def load_ml_readability_model():
             return False
             
     except Exception as e:
-        logger.error(f"Error loading ML readability model: {e}")
+        logger.info(f"ML readability model not available: {e}")
+        logger.info("Using fallback analysis. To enable ML features, install dependencies and train model.")
         return False
 
 def analyze_readability(code_snippet):

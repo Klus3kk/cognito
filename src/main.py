@@ -1,5 +1,5 @@
 """
-Enhanced main module for Cognito with multi-language support and clean styling.
+Main module for Cognito 
 """
 
 import os
@@ -65,7 +65,7 @@ except ImportError as e:
 # Initialize styling
 styler = CleanStyler()
 
-def detect_language_enhanced(code, filename=None):
+def detect_language(code, filename=None):
     """Enhanced language detection with detailed results."""
     try:
         detector = LanguageDetector()
@@ -81,11 +81,11 @@ def detect_language_enhanced(code, filename=None):
         else:
             return {'language': 'unknown', 'confidence': 0.0}
 
-def analyze_code_enhanced(code, filename=None, language=None, use_llm=False):
+def analyze_code(code, filename=None, language=None, use_llm=False):
     """Enhanced code analysis supporting multiple languages."""
     # Detect language if not specified
     if not language:
-        detection_result = detect_language_enhanced(code, filename)
+        detection_result = detect_language(code, filename)
         language = detection_result['language']
         confidence = detection_result.get('confidence', 0)
         
@@ -308,9 +308,9 @@ def analyze_with_progress(code, filename=None, language=None, use_llm=False, use
     if use_llm and use_adaptive and learning_llm_available:
         from llm.learning_enhancer import LearningLLMIntegration
         learning_enhancer = LearningLLMIntegration()
-        analysis_results = analyze_code_enhanced(code, filename, language, use_llm=True)
+        analysis_results = analyze_code(code, filename, language, use_llm=True)
     else:
-        analysis_results = analyze_code_enhanced(code, filename, language, use_llm=use_llm)
+        analysis_results = analyze_code(code, filename, language, use_llm=use_llm)
     
     return analysis_results
 
@@ -326,6 +326,7 @@ def main():
     parser.add_argument("--report", action="store_true", help="Generate improvement metrics report")
     parser.add_argument("--languages", action="store_true", help="Show supported languages")
     parser.add_argument("--batch", help="Analyze multiple files in a directory")
+    parser.add_argument("--version", action="version", version="Cognito v0.8.0")  
     args = parser.parse_args()
     
     # Handle specific command requests
@@ -400,7 +401,7 @@ def main():
                         print(f"\nanalyzing {file_path.name}...")
                         styler.print_progress(i + 1, len(code_files), f"Processing {file_path.name}")
                         
-                        analysis = analyze_code_enhanced(code, file_path.name, args.language, args.use_llm)
+                        analysis = analyze_code(code, file_path.name, args.language, args.use_llm)
                         
                         # Store summary
                         results_summary[str(file_path)] = {
