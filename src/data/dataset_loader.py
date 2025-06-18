@@ -37,30 +37,30 @@ class DatasetLoader:
         all_code_samples = []
         
         # Source 1: Direct GitHub - HumanEval
-        print("\n1️⃣ Loading from GitHub - HumanEval...")
+        print("\nLoading from GitHub - HumanEval...")
         samples_1 = self._load_from_github_humaneval(num_samples // 4)
         all_code_samples.extend(samples_1)
         print(f"   ✅ Collected {len(samples_1)} samples from GitHub HumanEval")
         
         # Source 2: Direct GitHub - Popular Python repos
-        print("\n2️⃣ Loading from GitHub - Popular Python files...")
+        print("\nLoading from GitHub - Popular Python files...")
         samples_2 = self._load_from_github_repos(num_samples // 4)
         all_code_samples.extend(samples_2)
         print(f"   ✅ Collected {len(samples_2)} samples from GitHub repos")
         
         # Source 3: Python Examples from Raw URLs
-        print("\n3️⃣ Loading Python examples from raw sources...")
+        print("\nLoading Python examples from raw sources...")
         samples_3 = self._load_from_raw_sources(num_samples // 4)
         all_code_samples.extend(samples_3)
         print(f"   ✅ Collected {len(samples_3)} samples from raw sources")
         
         # Source 4: Built-in Quality Examples
-        print("\n4️⃣ Loading built-in quality examples...")
+        print("\nLoading built-in quality examples...")
         samples_4 = self._get_quality_examples(num_samples // 4)
         all_code_samples.extend(samples_4)
-        print(f"   ✅ Collected {len(samples_4)} samples from quality examples")
+        print(f"Collected {len(samples_4)} samples from quality examples")
         
-        print(f"\n📊 Total collected: {len(all_code_samples)} real code samples")
+        print(f"\nTotal collected: {len(all_code_samples)} real code samples")
         
         # If we still need more, add local examples
         if len(all_code_samples) < num_samples:
@@ -74,7 +74,7 @@ class DatasetLoader:
         random.shuffle(all_code_samples)
         final_samples = all_code_samples[:num_samples]
         
-        print(f"📝 Final dataset: {len(final_samples)} samples")
+        print(f"Final dataset: {len(final_samples)} samples")
         
         # Now label them (if API key provided) or use heuristic scoring
         if self.client:
