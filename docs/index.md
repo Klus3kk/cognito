@@ -8,7 +8,6 @@
 ### User Guides
 - [Command Line Interface](cli.md) - Complete CLI reference
 - [Language Support](languages.md) - Supported programming languages
-- [Analysis Types](analysis.md) - Security, performance, and readability analysis
 
 ### Development
 - [Architecture](architecture.md) - System design and components
