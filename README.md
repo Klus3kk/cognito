@@ -1,33 +1,40 @@
 # Cognito
 
 **Cognito** is an interactive AI assistant that provides code review insights one suggestion at a time. It supports multiple programming languages (Python, C, C++...) and uses ML/NLP and LLM technologies to enhance code quality by:
+
 - **Improving readability**
 - **Ensuring security** (aligned with OWASP guidelines)
 - **Optimizing code performance**
 - **Providing AI-powered insights**
 
 ## Key Features
-* **Multi-Language Analysis**
-   - Supports Python, C, C++, Java, JavaScript with specialized analyzers
+
+**Multi-Language Analysis**
+   - Supports Python, C, C++, Java, JavaScript...
    - Universal analysis engine with language-specific optimizations
    - Intelligent language detection with confidence scoring
-* **Code Readability Analysis**
+   
+**Code Readability Analysis**
    - Checks for naming conventions, comments, and code structure
    - Suggests refactoring for clearer and more maintainable code
    - Automated code correction with pattern recognition
-* **Security Vulnerability Detection**
+     
+**Security Vulnerability Detection**
    - Detects common security issues and flags vulnerabilities according to OWASP standards
    - Language-specific security checks (buffer overflows, SQL injection, XSS)
    - Highlights risky functions and suggests safer alternatives
-* **Performance Analysis**
+     
+**Performance Analysis**
    - Analyzes algorithmic complexity and memory usage
    - Flags inefficient patterns and recommends optimizations
    - Big O complexity detection and optimization suggestions
-* **Interactive Suggestions**
+     
+**Interactive Suggestions**
    - Provides one suggestion at a time, allowing users to review, accept, or dismiss
    - Feedback collection system that improves suggestions over time
    - Offers optional explanations for each suggestion if requested
-* **AI-Powered Analysis**
+     
+**AI-Powered Analysis**
    - Uses LLM technology to provide natural language explanations of code
    - Enhances suggestions with AI-driven insights and alternatives
    - Adaptive learning system that improves based on user feedback
@@ -35,10 +42,8 @@
 
 ## Installation
 ```bash
-# Clone the repository
 git clone https://github.com/Klus3kk/cognito.git
 
-# Navigate to repository
 cd cognito
 
 # Automated installer (recommended)
@@ -46,11 +51,13 @@ cd cognito
 # or
 .\install.ps1  # Windows
 
+# OR
+
 # Manual installation
 pip install -e .
 
 # For ML features (recommended)
-# Create an account at huggingface.co and generate a token
+# Generate a token on Huggingface
 export HUGGINGFACE_TOKEN="your_token_here"
 
 # For AI-powered analysis (optional)
